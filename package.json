@@ -1,0 +1,29 @@
+{
+  "name": "kustompedia-tryon-platform",
+  "version": "1.0.0",
+  "description": "AI-powered garment try-on platform for Kustompedia internal use",
+  "main": "index.js",
+  "scripts": {
+    "setup": "chmod +x setup.sh && ./setup.sh",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm start\"",
+    "start": "cd backend && npm start",
+    "build": "cd frontend && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "kustompedia",
+    "try-on",
+    "ai",
+    "fashion",
+    "garment",
+    "openai"
+  ],
+  "author": "Kustompedia Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "dependencies": {
+    "form-data": "^4.0.3"
+  }
+}

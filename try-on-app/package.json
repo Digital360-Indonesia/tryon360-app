@@ -1,0 +1,29 @@
+{
+  "name": "try-on-app",
+  "version": "2.0.0",
+  "description": "Professional Try-On Application - Complete Rebuild",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "test": "cd backend && npm test",
+    "setup": "npm run install:all && cp backend/.env.example backend/.env"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "repository": {
+    "type": "git", 
+    "url": "local"
+  },
+  "keywords": [
+    "try-on",
+    "ai",
+    "fashion",
+    "image-generation"
+  ],
+  "author": "Kustompedia Team",
+  "license": "MIT"
+}
