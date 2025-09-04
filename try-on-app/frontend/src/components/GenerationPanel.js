@@ -179,20 +179,20 @@ const GenerationPanel = ({
           </div>
         </div>
 
-        {/* Garment Description */}
+        {/* Additional Notes */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Garment Description (Optional)
+            Additional Notes (Optional)
           </label>
           <textarea
             value={garmentDescription}
             onChange={(e) => setGarmentDescription(e.target.value)}
-            placeholder="e.g., Navy blue cotton t-shirt with regular fit..."
+            placeholder="e.g., Smile slightly, outdoor setting, show logo clearly..."
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             rows={3}
           />
           <p className="text-xs text-gray-500 mt-1">
-            Leave empty to auto-detect from uploaded product image
+            Extra instructions for pose, expression, or specific details
           </p>
         </div>
 

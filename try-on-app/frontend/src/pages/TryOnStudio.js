@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Palette, Download, RefreshCw, History, Trash2 } from 'lucide-react';
+import { Download, RefreshCw, History, Trash2 } from 'lucide-react';
 import ModelSelector from '../components/ModelSelector';
 import SimpleUpload from '../components/SimpleUpload';
 import GenerationPanel from '../components/GenerationPanel';
@@ -123,13 +123,11 @@ const TryOnStudio = () => {
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Palette className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Try-On Studio</h1>
-              <p className="text-sm text-gray-600">Professional garment visualization</p>
-            </div>
+            <img 
+              src="/try-on360-logo.png" 
+              alt="Try-On 360" 
+              className="h-12 w-auto"
+            />
           </div>
           
           <div className="flex items-center space-x-3">
@@ -141,8 +139,8 @@ const TryOnStudio = () => {
               <History className="w-5 h-5" />
             </button>
             <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">v2.0</p>
-              <p className="text-xs text-gray-500">Optimized</p>
+              <p className="text-sm font-medium text-gray-900">v2.6</p>
+              <p className="text-xs text-gray-500">Enhanced</p>
             </div>
           </div>
         </div>

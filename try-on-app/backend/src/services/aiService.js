@@ -145,6 +145,19 @@ class AIService {
     console.log('Composite dimensions: 752x1392 (9:16)');
     console.log('Sections: Face (top) | Product (middle) | Detail (bottom)');
     console.log('Prompt length:', requestData.prompt.length);
+    console.log('\n=== FULL PROMPT BEING SENT TO FLUX ===');
+    console.log(requestData.prompt);
+    console.log('=== END OF PROMPT ===\n');
+    
+    // SAVE PROMPT TO FILE FOR REVIEW (use SAME timestamp as composite debug)
+    const promptFilePath = path.join(__dirname, '../../generated', `prompt_${timestamp}.txt`);
+    fs.writeFileSync(promptFilePath, `Generation Timestamp: ${new Date().toISOString()}\n` +
+                                     `Model: ${request.modelId}\n` +
+                                     `Pose: ${request.pose || 'professional_standing'}\n` +
+                                     `Composite Image: composite_debug_${timestamp}.jpg\n` +
+                                     `\n=== PROMPT SENT TO FLUX ===\n\n` +
+                                     requestData.prompt);
+    console.log(`📝 PROMPT SAVED FOR REVIEW: ${promptFilePath}`);
     
     const config = {
       method: 'post',
@@ -476,8 +489,15 @@ class AIService {
     const gender = model.type === 'female' ? 'her' : 'him';
     const garmentType = request.garmentDescription || 'garment';
     
-    // Use the detailed description from model config
-    const modelDescription = model.detailedDescription || model.basePrompt;
+    // Use the exact model descriptions specified by user
+    const modelDescriptions = {
+      'gunawan': 'Indonesian male model with warm medium skin tone, black hair styled back with natural texture, almond-shaped dark brown eyes, well-defined thick eyebrows, straight nose with slightly rounded tip, light facial hair including mustache and beard stubble with moderate density, defined jawline, natural lip color, subtle smile lines, professional studio lighting creating natural skin luminosity.',
+      'paul': 'Indonesian West male model with medium-warm skin tone, dark brown hair styled back with volume, hazel-brown eyes with depth, thick well-defined eyebrows, straight nose with strong bridge, full beard and mustache with dense coverage in natural brown color, strong defined jawline, natural lip tone, confident expression, mature masculine features, professional studio lighting with even illumination.',
+      'rachma': 'Indonesian female model wearing hijab, warm light skin tone with natural glow, almond-shaped dark brown eyes with defined lashes, well-groomed arched eyebrows, straight nose with delicate bridge, natural pink lip color with subtle shine, gentle smile showing warmth, smooth complexion, hijab draped naturally around face covering hair completely, professional studio lighting creating luminous skin finish.',
+      'johny': 'Indonesian male model with warm light-medium skin tone, black hair styled back and slightly textured, almond-shaped dark brown eyes with gentle expression, naturally shaped eyebrows, straight nose with refined bridge, light facial hair including thin mustache and sparse beard stubble, softer jawline than Model 1, natural pink lip tone, friendly subtle smile, smooth skin texture with professional studio lighting.'
+    };
+    
+    const modelDescription = modelDescriptions[request.modelId] || model.detailedDescription;
     
     // CRITICAL: Emphasize exact facial replication first
     let prompt = `CRITICAL: Use the EXACT face from the top section - replicate ${model.name}'s face with 100% accuracy including facial features, skin tone, expression, and hair. This is the primary reference face that must be matched precisely.\n\n`;
@@ -492,17 +512,39 @@ class AIService {
     
     prompt += `**Garment Requirements:**\n`;
     prompt += `- Exact garment from middle section: colors, patterns, style, fit\n`;
+    
+    // Add embroidery/printing details with description and position
     if (request.embroideryDetails && request.embroideryDetails.length > 0) {
-      prompt += `- Include detail from bottom section: ${request.embroideryDetails[0].description}\n`;
+      try {
+        const details = Array.isArray(request.embroideryDetails) ? 
+          request.embroideryDetails : 
+          JSON.parse(request.embroideryDetails || '[]');
+        
+        if (details.length > 0) {
+          details.forEach((detail, index) => {
+            const description = detail.description || detail;
+            const position = detail.position || 'chest area';
+            prompt += `- Include embroidery/printing detail: "${description}" positioned at ${position}\n`;
+          });
+        } else {
+          prompt += `- Include detail from bottom section as shown in reference\n`;
+        }
+      } catch (e) {
+        prompt += `- Include detail from bottom section as shown in reference\n`;
+      }
     }
+    
     prompt += `- Dark dress pants/trousers for professional look\n`;
     prompt += `- Proper garment fit and drape\n\n`;
+    
+    // Get pose description
+    const { POSES } = require('../config/models');
+    const selectedPose = POSES[request.pose] || POSES['professional_standing'];
     
     prompt += `**Composition & Framing:**\n`;
     prompt += `- 3/4 body portrait: head to just below knees (STOP at knees, no feet visible)\n`;
     prompt += `- Athletic build with confident professional stance\n`;
-    prompt += `- Hands either at sides or casually in pockets\n`;
-    prompt += `- Direct forward-facing pose\n\n`;
+    prompt += `- ${selectedPose.prompt}\n\n`;
     
     prompt += `**Technical Specifications:**\n`;
     prompt += `- Professional studio photography with soft even lighting\n`;
@@ -510,6 +552,12 @@ class AIService {
     prompt += `- High-resolution commercial quality\n`;
     prompt += `- Sharp focus throughout\n`;
     prompt += `- Natural color reproduction\n\n`;
+    
+    // Add additional notes/special instructions if provided
+    if (request.garmentDescription && request.garmentDescription.trim()) {
+      prompt += `**Additional Notes:**\n`;
+      prompt += `${request.garmentDescription.trim()}\n\n`;
+    }
     
     prompt += `Create ONE seamless portrait that combines the exact face from top section with the exact garment from middle section. Ignore the vertical stacking layout - generate a single professional portrait. Priority: EXACT face matching is most critical.`;
     

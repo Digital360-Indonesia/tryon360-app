@@ -15,8 +15,9 @@ const SimpleUpload = ({ uploads, onUploadChange, onRemoveUpload }) => {
     }
   };
 
-  const UploadSlot = ({ slotType, inputRef, icon: Icon, title, description, required = false }) => {
+  const UploadSlot = ({ slotType, inputRef, icon: Icon, title, description, required = false, disabled = false }) => {
     const hasFile = uploads[slotType];
+    const isDisabled = disabled || (slotType === 'detail2' || slotType === 'detail3'); // v2.6: disable detail2 & detail3
 
     return (
       <div className="relative">
@@ -26,9 +27,10 @@ const SimpleUpload = ({ uploads, onUploadChange, onRemoveUpload }) => {
           accept="image/jpeg,image/jpg,image/png,image/webp"
           onChange={(e) => handleFileChange(slotType, e)}
           style={{ display: 'none' }}
+          disabled={isDisabled}
         />
 
-        {required && (
+        {required && !isDisabled && (
           <div className="absolute -top-2 -right-2 z-10">
             <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
               Required
@@ -36,13 +38,23 @@ const SimpleUpload = ({ uploads, onUploadChange, onRemoveUpload }) => {
           </div>
         )}
 
+        {isDisabled && (
+          <div className="absolute -top-2 -right-2 z-10">
+            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+              v2.6+
+            </span>
+          </div>
+        )}
+
         <div
-          onClick={() => inputRef.current?.click()}
+          onClick={() => !isDisabled && inputRef.current?.click()}
           className={`
-            relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all duration-200
-            ${hasFile 
-              ? 'border-green-500 bg-green-50' 
-              : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+            relative border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200
+            ${isDisabled 
+              ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50' 
+              : hasFile 
+                ? 'border-green-500 bg-green-50 cursor-pointer' 
+                : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
             }
             min-h-[150px]
           `}
