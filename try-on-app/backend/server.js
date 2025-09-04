@@ -8,8 +8,15 @@ const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    'http://localhost:7007',
+    'https://tryon-app-frontend.netlify.app',
+    'https://*.netlify.app'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -18,15 +25,18 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/models', express.static(path.join(__dirname, 'models')));
 app.use('/generated', express.static(path.join(__dirname, 'generated')));
 
-// Health check
-app.get('/health', (req, res) => {
+// Health check (both /health and /api/health)
+const healthHandler = (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     version: '2.0.0',
     environment: process.env.NODE_ENV || 'development'
   });
-});
+};
+
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 // API Routes
 app.use('/api/models', require('./src/routes/models'));
