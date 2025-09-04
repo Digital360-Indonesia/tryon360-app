@@ -1,57 +1,85 @@
-# ☁️ Cloud Deployment Guide - Render + Netlify
+# ☁️ Cloud Deployment Guide - Fly.io + Netlify
 
-Deploy your TryOn360 Platform to the cloud in minutes! This guide covers deploying the backend to Render and frontend to Netlify for instant availability.
+Deploy your TryOn360 Platform to the cloud in minutes! This guide covers deploying the backend to Fly.io (with global edge locations) and frontend to Netlify for instant availability.
 
 ## 🚀 Quick Start (5 Minutes Setup)
 
 ### Prerequisites
 - GitHub account with your repository
-- Render account (free tier available)
+- Fly.io account (free tier available with credit card)
 - Netlify account (free tier available)
 - Your API keys (OpenAI + FLUX)
+- Fly CLI installed: `curl -L https://fly.io/install.sh | sh`
 
 ---
 
-## 🔧 Backend Deployment (Render)
+## 🔧 Backend Deployment (Fly.io)
 
-### Step 1: Create Render Service
+### Step 1: Initialize Fly.io App
 
-1. **Go to [Render Dashboard](https://dashboard.render.com/)**
-2. **Click "New +" → "Web Service"**
-3. **Connect GitHub** and select your repository
-4. **Configure the service:**
-   ```
-   Name: tryon-app-backend
-   Branch: main
-   Root Directory: try-on-app/backend
-   Environment: Node
-   Build Command: npm install
-   Start Command: npm start
+1. **Navigate to backend directory:**
+   ```bash
+   cd try-on-app/backend
    ```
 
-### Step 2: Configure Environment Variables
+2. **Login to Fly.io:**
+   ```bash
+   fly auth login
+   ```
 
-In Render dashboard, add these environment variables:
+3. **Launch the app (creates app and config):**
+   ```bash
+   fly launch --name tryon-app-backend \
+     --region sin \
+     --dockerfile Dockerfile.fly \
+     --no-deploy
+   ```
+   - Choose "sin" (Singapore) or your preferred region
+   - Don't deploy yet (we need to set secrets first)
 
-```env
-NODE_ENV=production
-PORT=10000
-FRONTEND_URL=https://YOUR-NETLIFY-SITE.netlify.app
-OPENAI_API_KEY=your_openai_api_key_here
-FLUX_API_KEY=your_flux_api_key_here
+### Step 2: Configure Secrets (Environment Variables)
+
+Set your API keys as secrets:
+
+```bash
+fly secrets set OPENAI_API_KEY="your_openai_api_key_here"
+fly secrets set FLUX_API_KEY="your_flux_api_key_here"
+fly secrets set FRONTEND_URL="https://YOUR-NETLIFY-SITE.netlify.app"
 ```
 
-### Step 3: Deploy
+Verify secrets are set:
+```bash
+fly secrets list
+```
 
-1. **Click "Create Web Service"**
-2. **Wait 3-5 minutes for deployment**
-3. **Your backend URL**: `https://tryon-app-backend.onrender.com`
+### Step 3: Create Persistent Volumes
 
-### Step 4: Verify Backend
+Create volumes for file storage:
+```bash
+fly volumes create uploads_volume --size 1 --region sin
+fly volumes create generated_volume --size 1 --region sin
+```
+
+### Step 4: Deploy
+
+```bash
+fly deploy --dockerfile Dockerfile.fly
+```
+
+Wait 2-3 minutes for deployment. Your backend URL will be:
+`https://tryon-app-backend.fly.dev`
+
+### Step 5: Verify Backend
 
 Test your backend health:
 ```bash
-curl https://tryon-app-backend.onrender.com/health
+curl https://tryon-app-backend.fly.dev/health
+```
+
+Or check status:
+```bash
+fly status
+fly logs
 ```
 
 Should return:
@@ -85,7 +113,7 @@ Should return:
 In Netlify dashboard → Site settings → Environment variables:
 
 ```env
-REACT_APP_API_URL=https://tryon-app-backend.onrender.com/api
+REACT_APP_API_URL=https://tryon-app-backend.fly.dev/api
 REACT_APP_APP_NAME=TryOn360 Platform  
 REACT_APP_VERSION=2.0.0
 REACT_APP_ENVIRONMENT=production
@@ -99,20 +127,20 @@ REACT_APP_ENVIRONMENT=production
 
 ### Step 4: Update Backend CORS
 
-1. **Go back to Render dashboard**
-2. **Update FRONTEND_URL environment variable:**
+1. **Update FRONTEND_URL secret in Fly.io:**
+   ```bash
+   fly secrets set FRONTEND_URL="https://YOUR-ACTUAL-NETLIFY-URL.netlify.app"
    ```
-   FRONTEND_URL=https://YOUR-ACTUAL-NETLIFY-URL.netlify.app
-   ```
-3. **Redeploy backend service**
+2. **Backend will automatically restart with new secret**
 
 ---
 
 ## ⚙️ Configuration Files Reference
 
 ### Backend Files Added:
-- `backend/render.yaml` - Render service configuration
-- `backend/.env.render` - Environment template
+- `backend/fly.toml` - Fly.io app configuration
+- `backend/Dockerfile.fly` - Optimized Dockerfile for Fly.io
+- `backend/.dockerignore` - Files to exclude from Docker build
 
 ### Frontend Files Added:
 - `frontend/netlify.toml` - Netlify build & routing config
@@ -128,16 +156,22 @@ REACT_APP_ENVIRONMENT=production
 3. **Follow DNS configuration instructions**
 4. **SSL certificate automatically provisioned**
 
-### Render Custom Domain  
-1. **Render Dashboard** → Service → Settings → Custom Domains
-2. **Add domain**: `api.yourapp.com`
-3. **Update DNS CNAME** record
-4. **SSL certificate automatically provisioned**
+### Fly.io Custom Domain  
+1. **Add certificate for domain:**
+   ```bash
+   fly certs add api.yourapp.com
+   ```
+2. **Update DNS with provided records**
+3. **SSL certificate automatically provisioned**
+4. **Verify:**
+   ```bash
+   fly certs check api.yourapp.com
+   ```
 
 ### Update Environment Variables for Custom Domains
-```env
-# Render
-FRONTEND_URL=https://yourapp.com
+```bash
+# Fly.io
+fly secrets set FRONTEND_URL="https://yourapp.com"
 
 # Netlify  
 REACT_APP_API_URL=https://api.yourapp.com/api
@@ -147,10 +181,12 @@ REACT_APP_API_URL=https://api.yourapp.com/api
 
 ## 📊 Monitoring & Logs
 
-### Render Monitoring
-- **Logs**: Render Dashboard → Service → Logs
-- **Metrics**: Built-in CPU, Memory, Response time charts
+### Fly.io Monitoring
+- **Logs**: `fly logs` or `fly logs --tail`
+- **Metrics**: `fly dashboard` opens metrics in browser
+- **Status**: `fly status` shows app instances
 - **Health checks**: Automatic via `/health` endpoint
+- **SSH into container**: `fly ssh console`
 
 ### Netlify Monitoring
 - **Build logs**: Netlify Dashboard → Deploys
@@ -165,11 +201,15 @@ REACT_APP_API_URL=https://api.yourapp.com/api
 Both services auto-deploy when you push to GitHub main branch.
 
 ### Manual Deployment
-**Render**: Dashboard → "Manual Deploy" button
+**Fly.io**: `fly deploy --dockerfile Dockerfile.fly`
 **Netlify**: Dashboard → "Trigger deploy" button
 
 ### Rolling Back
-**Render**: Dashboard → Deploys → Select previous deploy → "Redeploy"
+**Fly.io**: 
+```bash
+fly releases
+fly deploy --image registry.fly.io/tryon-app-backend:v[NUMBER]
+```
 **Netlify**: Dashboard → Deploys → Click deploy → "Publish deploy"
 
 ### Update Process
@@ -187,10 +227,11 @@ git push origin main
 
 ## 💰 Cost Breakdown
 
-### Render (Backend)
-- **Free Tier**: 750 hours/month, sleeps after 15min inactivity
-- **Starter Plan**: $7/month, no sleeping, 512MB RAM
-- **Standard Plan**: $25/month, 2GB RAM, better performance
+### Fly.io (Backend)
+- **Free Tier**: $5 credit/month (requires credit card)
+- **Hobby Plan**: ~$5/month for 1 shared CPU, 256MB RAM
+- **Standard Plan**: ~$10/month for 1 shared CPU, 512MB RAM
+- **Includes**: 3GB persistent storage, global deployment
 
 ### Netlify (Frontend)  
 - **Free Tier**: 100GB bandwidth, 300 build minutes/month
@@ -198,9 +239,9 @@ git push origin main
 - **Business Plan**: $99/month, advanced features
 
 ### Recommended for Production
-- **Render Starter** ($7/month) - No sleeping, reliable performance
+- **Fly.io Hobby** (~$5/month) - Always on, global edge
 - **Netlify Free** (sufficient for most use cases)
-- **Total**: ~$7/month for reliable service
+- **Total**: ~$5/month with better global performance
 
 ---
 
@@ -210,15 +251,22 @@ git push origin main
 
 **Backend not starting:**
 ```bash
-# Check Render logs for missing environment variables
-# Ensure API keys are set correctly
-# Verify Node.js version (18.x required)
+# Check Fly logs
+fly logs
+
+# Check secrets are set
+fly secrets list
+
+# SSH into container to debug
+fly ssh console
 ```
 
 **CORS errors:**
 ```bash
-# Update FRONTEND_URL in Render environment variables
-# Redeploy backend service
+# Update FRONTEND_URL secret
+fly secrets set FRONTEND_URL="https://your-netlify-url.netlify.app"
+
+# App auto-restarts with new secret
 # Clear browser cache
 ```
 
@@ -238,10 +286,11 @@ git push origin main
 
 ### Performance Optimization
 
-**Backend (Render):**
-- Use Starter plan or higher for production
-- Enable persistent storage for uploads if needed
-- Monitor response times and upgrade if slow
+**Backend (Fly.io):**
+- Scale horizontally: `fly scale count 2`
+- Scale vertically: `fly scale vm shared-cpu-1x --memory 512`
+- Add regions: `fly regions add lax` (Los Angeles)
+- Monitor: `fly dashboard`
 
 **Frontend (Netlify):**
 - Enable build optimizations (already configured)
@@ -285,10 +334,10 @@ git push origin main
 ### Test Commands
 ```bash
 # Test backend health
-curl https://your-render-url.onrender.com/health
+curl https://tryon-app-backend.fly.dev/health
 
 # Test models endpoint  
-curl https://your-render-url.onrender.com/api/models
+curl https://tryon-app-backend.fly.dev/api/models
 
 # Test frontend
 curl -I https://your-netlify-site.netlify.app
@@ -314,10 +363,11 @@ Before sharing with your team:
 
 ## 📞 Support Resources
 
-**Render Support:**
-- [Render Documentation](https://render.com/docs)
-- [Community Forum](https://community.render.com/)
-- [Status Page](https://status.render.com/)
+**Fly.io Support:**
+- [Fly.io Documentation](https://fly.io/docs)
+- [Community Forum](https://community.fly.io/)
+- [Status Page](https://status.flyio.net/)
+- CLI Help: `fly help`
 
 **Netlify Support:**  
 - [Netlify Documentation](https://docs.netlify.com/)
@@ -336,7 +386,7 @@ Your TryOn360 Platform is now live in the cloud!
 
 **Share these URLs with your team:**
 - **App**: `https://your-netlify-site.netlify.app`
-- **API**: `https://your-render-service.onrender.com`
+- **API**: `https://tryon-app-backend.fly.dev`
 
 **Next Steps:**
 - Test all functionality with your team
@@ -347,6 +397,6 @@ Your TryOn360 Platform is now live in the cloud!
 ---
 
 **Deployment Status**: ✅ Ready for Production  
-**Cloud Provider**: Render + Netlify  
+**Cloud Provider**: Fly.io + Netlify  
 **Estimated Deploy Time**: 5-10 minutes  
 **Monthly Cost**: Free tier available, $7/month recommended

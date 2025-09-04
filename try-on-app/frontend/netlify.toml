@@ -20,7 +20,7 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://tryon-app-backend.onrender.com wss://tryon-app-backend.onrender.com;"
+    Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://tryon-app-backend.fly.dev wss://tryon-app-backend.fly.dev;"
 
 # Cache static assets
 [[headers]]
@@ -31,9 +31,9 @@
 # API proxy (optional fallback)
 [[redirects]]
   from = "/api/*"
-  to = "https://tryon-app-backend.onrender.com/api/:splat"
+  to = "https://tryon-app-backend.fly.dev/api/:splat"
   status = 200
   force = true
 
 # Environment variables (these will be set in Netlify dashboard)
-# REACT_APP_API_URL=https://tryon-app-backend.onrender.com/api
+# REACT_APP_API_URL=https://tryon-app-backend.fly.dev/api
