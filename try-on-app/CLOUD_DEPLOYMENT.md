@@ -15,6 +15,8 @@ Deploy your TryOn360 Platform to the cloud in minutes! This guide covers deployi
 
 ## 🔧 Backend Deployment (Fly.io)
 
+> **💡 Want GitHub Auto-Deploy?** See [FLY_GITHUB_SETUP.md](./FLY_GITHUB_SETUP.md) for automatic deployments from GitHub (like Netlify!)
+
 ### Step 1: Initialize Fly.io App
 
 1. **Navigate to backend directory:**
