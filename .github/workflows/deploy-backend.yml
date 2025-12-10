@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'try-on-app/backend/**'
+      - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
 
@@ -25,7 +25,7 @@ jobs:
 
       - name: Deploy to Fly.io
         run: |
-          cd try-on-app/backend
+          cd backend
           flyctl deploy --remote-only \
             --dockerfile Dockerfile.fly \
             --app tryon-app-backend \
