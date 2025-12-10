@@ -50,3 +50,10 @@ dist/
 out/
 # Local Netlify folder
 .netlify
+
+# Old unused files and directories
+old-unused-files-20250910/
+*.psd
+.claude/
+.kiro/
+master-modelfaces.psd
