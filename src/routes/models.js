@@ -9,18 +9,29 @@ const router = express.Router();
  */
 router.get('/', (req, res) => {
   try {
-    const models = Object.values(PROFESSIONAL_MODELS).map(model => ({
-      id: model.id,
-      name: model.name,
-      type: model.type,
-      isPrimary: model.isPrimary,
-      avatar: model.avatar,
-      description: model.description,
-      availablePoses: model.availablePoses.map(poseId => ({
+    const models = Object.values(PROFESSIONAL_MODELS).map(model => {
+      const modelPoses = model.availablePoses.map(poseId => ({
         id: poseId,
         ...POSES[poseId]
-      }))
-    }));
+      }));
+
+      // Create poses map for each model
+      const posesMap = {};
+      modelPoses.forEach(pose => {
+        posesMap[pose.id] = pose;
+      });
+
+      return {
+        id: model.id,
+        name: model.name,
+        type: model.type,
+        isPrimary: model.isPrimary,
+        avatar: model.avatar,
+        description: model.description,
+        availablePoses: modelPoses,
+        posesMap: posesMap
+      };
+    });
 
     res.json({
       success: true,
@@ -51,15 +62,25 @@ router.get('/:modelId', (req, res) => {
       });
     }
 
+    // Create poses for the model
+    const modelPoses = model.availablePoses.map(poseId => ({
+      id: poseId,
+      ...POSES[poseId]
+    }));
+
+    // Create poses map
+    const posesMap = {};
+    modelPoses.forEach(pose => {
+      posesMap[pose.id] = pose;
+    });
+
     // Return detailed model information
     res.json({
       success: true,
       model: {
         ...model,
-        availablePoses: model.availablePoses.map(poseId => ({
-          id: poseId,
-          ...POSES[poseId]
-        }))
+        availablePoses: modelPoses,
+        posesMap: posesMap
       }
     });
   } catch (error) {
@@ -137,10 +158,17 @@ router.get('/:modelId/poses', (req, res) => {
       ...POSES[poseId]
     }));
 
+    // Create a poses map for easier frontend access
+    const posesMap = {};
+    modelPoses.forEach(pose => {
+      posesMap[pose.id] = pose;
+    });
+
     res.json({
       success: true,
       modelId: modelId,
-      poses: modelPoses
+      poses: modelPoses,
+      posesMap: posesMap
     });
   } catch (error) {
     res.status(500).json({

@@ -4,25 +4,20 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 8080; // Fly.io uses 8080 by default
+const PORT = process.env.PORT || 3000; // Default to 3000 for single app
 
 // Middleware
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'http://localhost:7007',
-    'https://tryon-app-frontend.netlify.app',
-    'https://*.netlify.app'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static file serving
 app.use('/models', express.static(path.join(__dirname, 'models')));
+
+// Serve React build files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'build')));
+}
 
 // Handle generated files serving based on environment
 const generatedPath = process.env.NODE_ENV === 'production' 
@@ -73,24 +68,41 @@ app.use((error, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Endpoint not found'
+// API Routes
+app.use('/api/models', require('./src/routes/models'));
+app.use('/api/generation', require('./src/routes/generation'));
+
+// In production, serve React app for any non-API routes
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build/index.html'));
   });
-});
+} else {
+  // In development, return 404 for non-API routes
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      success: false,
+      error: 'Endpoint not found'
+    });
+  });
+}
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`✅ Try-On App Backend running on port ${PORT}`);
-  console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-  console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
-  
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  console.log(`✅ Try-On App running on port ${PORT}`);
+  console.log(`🌐 Application: http://localhost:${PORT}`);
+  console.log(`📁 Environment: ${isProduction ? 'production' : 'development'}`);
+
+  if (isProduction) {
+    console.log('🎨 Frontend and Backend combined');
+  }
+
   // Validate API keys
   const requiredKeys = ['OPENAI_API_KEY', 'FLUX_API_KEY'];
   const missingKeys = requiredKeys.filter(key => !process.env[key]);
-  
+
   if (missingKeys.length > 0) {
     console.warn(`⚠️  Missing API keys: ${missingKeys.join(', ')}`);
   } else {
