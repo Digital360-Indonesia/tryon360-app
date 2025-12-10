@@ -89,9 +89,9 @@ const PROFESSIONAL_MODELS = {
   rachma: {
     id: 'rachma',
     name: 'Rachma',
-    type: 'female', 
+    type: 'female',
     isPrimary: true,
-    avatar: '/models/rachma-reference.jpg',
+    avatar: '/models/rachma-reference.png',
     description: 'Professional Indonesian female model',
     detailedDescription: 'Indonesian female model wearing hijab, warm light skin tone with natural glow, almond-shaped dark brown eyes with defined lashes, well-groomed arched eyebrows, straight nose with delicate bridge, natural pink lip color with subtle shine, gentle smile showing warmth, smooth complexion, hijab draped naturally around face covering hair completely, professional studio lighting creating luminous skin finish.',
     
