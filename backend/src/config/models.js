@@ -160,8 +160,88 @@ const PROFESSIONAL_MODELS = {
     availablePoses: [
       'professional_standing',
       'arms_crossed',
-      'hands_in_pockets', 
+      'hands_in_pockets',
       'casual_confident',
+      'look_over_shoulder',
+      'side_flex'
+    ]
+  },
+
+  louise: {
+    id: 'louise',
+    name: 'Louise',
+    type: 'female',
+    isPrimary: false,
+    avatar: '/models/louise-reference.png',
+    description: 'Professional female model',
+    detailedDescription: 'Professional female model with elegant features, warm complexion, expressive eyes, graceful posture, sophisticated style, confident and approachable demeanor, professional studio lighting highlighting natural beauty.',
+
+    physicalDescription: {
+      face: 'elegant oval face with soft features',
+      eyes: 'expressive eyes with natural lashes',
+      eyebrows: 'well-groomed eyebrows with natural shape',
+      nose: 'refined nose with elegant bridge',
+      lips: 'natural lips with subtle curve',
+      skin: 'warm even complexion with natural glow',
+      hair: 'styled hair with professional finish',
+      expression: 'confident professional expression with warmth'
+    },
+
+    bodyCharacteristics: {
+      height: '5 feet 7 inches',
+      build: 'slim elegant build with good posture',
+      shoulders: 'proportional shoulders',
+      arms: 'toned arms',
+      style: 'elegant professional demeanor'
+    },
+
+    basePrompt: `A professional woman with elegant oval face, expressive eyes, styled hair, warm complexion, confident professional expression with warmth, slim elegant build, 5'7" height, wearing {garment_description}. Professional studio photography, clean white background, soft even lighting, high resolution, commercial quality image.`,
+
+    availablePoses: [
+      'professional_standing',
+      'hands_clasped',
+      'one_hand_on_hip',
+      'casual_standing',
+      'look_over_shoulder',
+      'side_flex'
+    ]
+  },
+
+  jennie: {
+    id: 'jennie',
+    name: 'Jennie',
+    type: 'female',
+    isPrimary: false,
+    avatar: '/models/jennie-reference.png',
+    description: 'Professional female model',
+    detailedDescription: 'Professional female model with striking features, confident presence, distinctive style, charismatic expression, modern aesthetic, professional studio lighting creating dramatic effect.',
+
+    physicalDescription: {
+      face: 'defined facial features with strong bone structure',
+      eyes: 'captivating eyes with intense gaze',
+      eyebrows: 'well-defined eyebrows with confident shape',
+      nose: 'straight nose with defined profile',
+      lips: 'distinctive lips with natural shape',
+      skin: 'clear complexion with healthy glow',
+      hair: 'contemporary hairstyle with modern styling',
+      expression: 'charismatic confident expression'
+    },
+
+    bodyCharacteristics: {
+      height: '5 feet 6 inches',
+      build: 'slim build with confident posture',
+      shoulders: 'defined shoulders',
+      arms: 'toned arms',
+      style: 'modern confident presence'
+    },
+
+    basePrompt: `A professional woman with defined features, captivating eyes, contemporary hairstyle, clear complexion, charismatic confident expression, slim confident build, 5'6" height, wearing {garment_description}. Professional studio photography, clean white background, dramatic lighting, high resolution, commercial quality image.`,
+
+    availablePoses: [
+      'professional_standing',
+      'hands_clasped',
+      'one_hand_on_hip',
+      'casual_standing',
       'look_over_shoulder',
       'side_flex'
     ]
