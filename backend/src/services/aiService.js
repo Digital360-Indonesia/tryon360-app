@@ -142,10 +142,19 @@ class AIService {
     const ImageComposer = require('./imageComposer');
     const composer = new ImageComposer();
     
-    // Get model reference photo
-    const modelPhotoPath = path.join(__dirname, `../../models/${request.modelId}-reference.jpg`);
-    if (!fs.existsSync(modelPhotoPath)) {
-      throw new Error(`Model reference photo not found: ${modelPhotoPath}`);
+    // Get model reference photo (check for both .jpg and .png)
+    const modelPhotoPathJpg = path.join(__dirname, `../../models/${request.modelId}-reference.jpg`);
+    const modelPhotoPathPng = path.join(__dirname, `../../models/${request.modelId}-reference.png`);
+    let modelPhotoPath = null;
+
+    if (fs.existsSync(modelPhotoPathJpg)) {
+      modelPhotoPath = modelPhotoPathJpg;
+    } else if (fs.existsSync(modelPhotoPathPng)) {
+      modelPhotoPath = modelPhotoPathPng;
+    }
+
+    if (!modelPhotoPath) {
+      throw new Error(`Model reference photo not found: Tried ${modelPhotoPathJpg} and ${modelPhotoPathPng}`);
     }
     
     console.log('Creating composite image for FLUX...');
@@ -367,10 +376,19 @@ class AIService {
     const ImageComposer = require('./imageComposer');
     const composer = new ImageComposer();
     
-    // Get model reference photo
-    const modelPhotoPath = path.join(__dirname, `../../models/${request.modelId}-reference.jpg`);
-    if (!fs.existsSync(modelPhotoPath)) {
-      throw new Error(`Model reference photo not found: ${modelPhotoPath}`);
+    // Get model reference photo (check for both .jpg and .png)
+    const modelPhotoPathJpg = path.join(__dirname, `../../models/${request.modelId}-reference.jpg`);
+    const modelPhotoPathPng = path.join(__dirname, `../../models/${request.modelId}-reference.png`);
+    let modelPhotoPath = null;
+
+    if (fs.existsSync(modelPhotoPathJpg)) {
+      modelPhotoPath = modelPhotoPathJpg;
+    } else if (fs.existsSync(modelPhotoPathPng)) {
+      modelPhotoPath = modelPhotoPathPng;
+    }
+
+    if (!modelPhotoPath) {
+      throw new Error(`Model reference photo not found: Tried ${modelPhotoPathJpg} and ${modelPhotoPathPng}`);
     }
     
     console.log('Creating composite image for Nano Banana...');
