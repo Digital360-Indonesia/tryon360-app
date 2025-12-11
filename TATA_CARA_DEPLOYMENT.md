@@ -30,8 +30,8 @@ garment-tryon-app/
 │   ├── src/             # React components
 │   └── package.json     # Frontend dependencies
 ├── models/              # Model reference photos
-├── data/                # Data generated (auto-generated)
-└── generated/           # Hasil generated images (auto-generated)
+├── generated/           # Hasil generated images (auto-generated)
+└── uploads/             # Upload files sementara (auto-generated)
 ```
 
 ## 🚀 Cara Deployment
@@ -43,13 +43,11 @@ garment-tryon-app/
 git clone <your-repo-url> garment-tryon-app
 cd garment-tryon-app
 
-# Install dependencies
-npm install
+# Install semua dependencies (backend + frontend)
+npm run install:all
 
-# Install frontend dependencies
-cd client
-npm install
-cd ..
+# Atau untuk production:
+npm run install:prod
 ```
 
 ### 2. Konfigurasi Environment Variables
@@ -73,11 +71,19 @@ BACKEND_PORT=3000
 ### 3. Build Frontend
 
 ```bash
-# Build production version
+# Build production version (build frontend dan salin ke root)
 npm run build
 ```
 
-### 4. Jalankan di Development
+### 4. One-Command Setup (Optional)
+
+```bash
+# Install semua dependencies + build dalam satu command
+npm run setup         # Untuk development
+npm run setup:prod    # Untuk production
+```
+
+### 5. Jalankan di Development
 
 ```bash
 # Mode development
@@ -89,7 +95,7 @@ npm start
 
 Aplikasi akan berjalan di `http://localhost:3000`
 
-### 5. Deployment ke Production
+### 6. Deployment ke Production
 
 #### Opsi 1: Direct Deployment (VPS/Dedicated Server)
 
@@ -97,8 +103,8 @@ Aplikasi akan berjalan di `http://localhost:3000`
 # Install PM2 untuk process management
 npm install -g pm2
 
-# Build aplikasi
-npm run build
+# Setup lengkap (install dependencies + build)
+npm run setup:prod
 
 # Jalankan dengan PM2
 pm2 start server.js --name "garment-tryon"
@@ -120,9 +126,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY client/package*.json ./client/
 
-# Install dependencies
-RUN npm ci --only=production
-RUN cd client && npm ci --only=production
+# Install all dependencies
+RUN npm run install:prod
 
 # Copy source code
 COPY . .
@@ -213,7 +218,7 @@ APP_DIR="/path/to/garment-tryon-app"
 mkdir -p $BACKUP_DIR
 
 # Backup generated files
-tar -czf $BACKUP_DIR/generated_$DATE.tar.gz -C $APP_DIR data/ generated/
+tar -czf $BACKUP_DIR/generated_$DATE.tar.gz -C $APP_DIR generated/ uploads/
 
 # Backup database jika ada
 # mysqldump -u username -p database > $BACKUP_DIR/db_$DATE.sql
@@ -330,8 +335,10 @@ Untuk update ke versi terbaru:
 git pull origin main
 
 # Install dependencies baru (jika ada)
-npm install
-cd client && npm install && cd ..
+npm run install:all  # Install semua dependencies
+
+# Atau untuk production:
+npm run install:prod
 
 # Build ulang
 npm run build

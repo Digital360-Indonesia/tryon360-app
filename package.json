@@ -8,7 +8,11 @@
     "dev": "nodemon server.js",
     "build": "cd client && npm install && npm run build && cp -r build ../",
     "build-and-start": "npm run build && npm start",
+    "install:all": "npm install && npm run install-client",
+    "install:prod": "npm ci --only=production && cd client && npm ci --only=production",
     "install-client": "cd client && npm install",
+    "setup": "npm run install:all && npm run build",
+    "setup:prod": "npm run install:prod && npm run build",
     "test": "jest",
     "test:watch": "jest --watch"
   },
