@@ -3,6 +3,9 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// Import database connection
+const database = require('./src/config/database');
+
 const app = express();
 const PORT = process.env.PORT || 3000; // Default to 3000 for single app
 
@@ -25,12 +28,15 @@ console.log(`📁 Serving generated files from: ${generatedPath}`);
 app.use('/generated', express.static(generatedPath));
 
 // Health check (both /health and /api/health)
-const healthHandler = (req, res) => {
+const healthHandler = async (req, res) => {
+  const dbHealth = await database.healthCheck();
+
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     version: '2.0.0',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    database: dbHealth
   });
 };
 
@@ -85,7 +91,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   const isProduction = process.env.NODE_ENV === 'production';
 
   console.log(`✅ Try-On App running on port ${PORT}`);
@@ -96,8 +102,16 @@ app.listen(PORT, () => {
     console.log('🎨 Frontend and Backend combined');
   }
 
+  // Connect to MongoDB
+  try {
+    await database.connect();
+  } catch (error) {
+    console.error('❌ Failed to connect to MongoDB:', error);
+    process.exit(1);
+  }
+
   // Validate API keys
-  const requiredKeys = ['OPENAI_API_KEY', 'FLUX_API_KEY'];
+  const requiredKeys = ['GEMINI_API_KEY', 'FLUX_API_KEY'];
   const missingKeys = requiredKeys.filter(key => !process.env[key]);
 
   if (missingKeys.length > 0) {

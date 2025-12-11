@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const AIService = require('../services/aiService');
 const ImageProcessor = require('../services/imageProcessor');
 const { PROFESSIONAL_MODELS } = require('../config/models');
+const Generation = require('../models/Generation');
 
 const router = express.Router();
 
@@ -30,9 +31,6 @@ const upload = multer({
 // Initialize services
 const aiService = new AIService();
 const imageProcessor = new ImageProcessor();
-
-// Store for tracking generations (in production, use Redis/database)
-const generationJobs = new Map();
 
 /**
  * POST /api/generation/try-on
@@ -80,23 +78,33 @@ router.post('/try-on', upload.fields([
       });
     }
 
-    // Initialize job tracking
-    generationJobs.set(jobId, {
-      status: 'processing',
-      startTime: Date.now(),
+    // Initialize job tracking in MongoDB
+    const generation = new Generation({
+      jobId,
       modelId,
       pose,
-      providerId,
-      progress: 0
+      provider: providerId,
+      status: 'processing',
+      progress: 0,
+      userIp: req.ip,
+      userAgent: req.get('User-Agent')
     });
 
+    await generation.save();
+
     // Update progress
-    const updateProgress = (stage, progress) => {
-      const job = generationJobs.get(jobId);
-      if (job) {
-        job.stage = stage;
-        job.progress = progress;
-        generationJobs.set(jobId, job);
+    const updateProgress = async (stage, progress) => {
+      try {
+        await Generation.updateOne(
+          { jobId },
+          {
+            progress,
+            // You could add a stage field if needed
+            // metadata: { lastStage: stage }
+          }
+        );
+      } catch (error) {
+        console.error('Progress update error:', error);
       }
     };
 
@@ -177,13 +185,17 @@ router.post('/try-on', upload.fields([
 
     updateProgress('Finalizing', 90);
 
-    // Update job status
-    generationJobs.set(jobId, {
-      ...generationJobs.get(jobId),
-      status: 'completed',
-      result: generationResult,
-      progress: 100,
-      endTime: Date.now()
+    // Update job status in MongoDB
+    await generation.complete({
+      imageUrl: `/generated/${path.basename(generationResult.imagePath)}`,
+      imagePath: generationResult.imagePath,
+      prompt: generationResult.prompt,
+      metadata: generationResult.metadata,
+      processedFiles: Object.keys(processedFiles).map(key => ({
+        type: key,
+        filename: processedFiles[key].filename,
+        analysis: processedFiles[key].analysis
+      }))
     });
 
     updateProgress('Complete', 100);
@@ -204,19 +216,20 @@ router.post('/try-on', upload.fields([
           analysis: processedFiles[key].analysis
         }))
       },
-      processingTime: Date.now() - generationJobs.get(jobId).startTime
+      processingTime: generation.processingTime
     });
 
   } catch (error) {
     console.error('Generation error:', error);
-    
-    // Update job status
-    generationJobs.set(jobId, {
-      ...generationJobs.get(jobId),
-      status: 'failed',
-      error: error.message,
-      endTime: Date.now()
-    });
+
+    // Update job status in MongoDB
+    try {
+      if (generation) {
+        await generation.fail(error.message);
+      }
+    } catch (dbError) {
+      console.error('Database error updating job status:', dbError);
+    }
 
     res.status(500).json({
       success: false,
@@ -226,35 +239,6 @@ router.post('/try-on', upload.fields([
   }
 });
 
-/**
- * GET /api/generation/job/:jobId
- * Get generation job status
- */
-router.get('/job/:jobId', (req, res) => {
-  const { jobId } = req.params;
-  const job = generationJobs.get(jobId);
-
-  if (!job) {
-    return res.status(404).json({
-      success: false,
-      error: 'Job not found'
-    });
-  }
-
-  res.json({
-    success: true,
-    job: {
-      id: jobId,
-      status: job.status,
-      progress: job.progress,
-      stage: job.stage,
-      startTime: job.startTime,
-      endTime: job.endTime,
-      result: job.result,
-      error: job.error
-    }
-  });
-});
 
 /**
  * GET /api/generation/providers
@@ -291,28 +275,37 @@ router.get('/providers', async (req, res) => {
  * DELETE /api/generation/job/:jobId
  * Cancel generation job
  */
-router.delete('/job/:jobId', (req, res) => {
-  const { jobId } = req.params;
-  const job = generationJobs.get(jobId);
+router.delete('/job/:jobId', async (req, res) => {
+  try {
+    const { jobId } = req.params;
 
-  if (!job) {
-    return res.status(404).json({
+    const generation = await Generation.findOne({ jobId });
+
+    if (!generation) {
+      return res.status(404).json({
+        success: false,
+        error: 'Job not found'
+      });
+    }
+
+    if (generation.status === 'processing') {
+      // Update status to cancelled
+      generation.status = 'cancelled';
+      generation.endTime = new Date();
+      await generation.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Job cancelled successfully'
+    });
+  } catch (error) {
+    console.error('Cancel job error:', error);
+    res.status(500).json({
       success: false,
-      error: 'Job not found'
+      error: error.message
     });
   }
-
-  if (job.status === 'processing') {
-    // In a full implementation, this would cancel the actual AI request
-    job.status = 'cancelled';
-    job.endTime = Date.now();
-    generationJobs.set(jobId, job);
-  }
-
-  res.json({
-    success: true,
-    message: 'Job cancelled successfully'
-  });
 });
 
 // Note: Generated images are served via static middleware in server.js at /generated/
@@ -331,6 +324,85 @@ router.post('/cleanup', async (req, res) => {
       ...result
     });
   } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/generation/status/:jobId
+ * Get generation job status
+ */
+router.get('/status/:jobId', async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    const generation = await Generation.findOne({ jobId });
+
+    if (!generation) {
+      return res.status(404).json({
+        success: false,
+        error: 'Generation job not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      jobId: generation.jobId,
+      status: generation.status,
+      progress: generation.progress,
+      imageUrl: generation.imageUrl,
+      error: generation.error,
+      processingTime: generation.processingTime,
+      createdAt: generation.createdAt,
+      updatedAt: generation.updatedAt
+    });
+  } catch (error) {
+    console.error('Status check error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/generation/history
+ * Get generation history
+ */
+router.get('/history', async (req, res) => {
+  try {
+    const { modelId, limit = 20, page = 1 } = req.query;
+
+    const query = {};
+    if (modelId) {
+      query.modelId = modelId;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const generations = await Generation.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .select('-metadata -processedFiles');
+
+    const total = await Generation.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: generations,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('History fetch error:', error);
     res.status(500).json({
       success: false,
       error: error.message
