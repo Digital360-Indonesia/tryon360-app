@@ -1,148 +1,221 @@
-const mongoose = require('mongoose');
+const database = require('../config/database');
 
-const generationSchema = new mongoose.Schema({
-  jobId: {
-    type: String,
-    required: true,
-    unique: true,
-    index: true
-  },
-  modelId: {
-    type: String,
-    required: true
-  },
-  pose: {
-    type: String,
-    default: 'professional_standing'
-  },
-  provider: {
-    type: String,
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['processing', 'completed', 'failed'],
-    default: 'processing'
-  },
-  progress: {
-    type: Number,
-    min: 0,
-    max: 100,
-    default: 0
-  },
-  prompt: {
-    type: String
-  },
-  imageUrl: {
-    type: String
-  },
-  imagePath: {
-    type: String
-  },
-  metadata: {
-    type: mongoose.Schema.Types.Mixed
-  },
-  processedFiles: [{
-    type: {
-      type: String,
-      required: true
-    },
-    filename: {
-      type: String,
-      required: true
-    },
-    analysis: {
-      type: mongoose.Schema.Types.Mixed
+class Generation {
+  constructor(data) {
+    this.jobId = data.jobId;
+    this.modelId = data.modelId;
+    this.pose = data.pose || 'professional_standing';
+    this.provider = data.provider;
+    this.status = data.status || 'processing';
+    this.progress = data.progress || 0;
+    this.userIp = data.userIp;
+    this.userAgent = data.userAgent;
+  }
+
+  async save() {
+    try {
+      const pool = database.getPool();
+
+      if (this.id) {
+        // Update existing record
+        const [result] = await pool.execute(`
+          UPDATE generations
+          SET modelId = ?, pose = ?, provider = ?, status = ?, progress = ?,
+              userIp = ?, userAgent = ?
+          WHERE id = ?
+        `, [
+          this.modelId, this.pose, this.provider, this.status, this.progress,
+          this.userIp, this.userAgent, this.id
+        ]);
+        return result;
+      } else {
+        // Insert new record
+        const [result] = await pool.execute(`
+          INSERT INTO generations
+          (jobId, modelId, pose, provider, status, progress, userIp, userAgent)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          this.jobId, this.modelId, this.pose, this.provider,
+          this.status, this.progress, this.userIp, this.userAgent
+        ]);
+
+        this.id = result.insertId;
+        this.createdAt = new Date();
+        return result;
+      }
+    } catch (error) {
+      console.error('❌ Generation save failed:', error);
+      throw error;
     }
-  }],
-  error: {
-    type: String
-  },
-  processingTime: {
-    type: Number
-  },
-  startTime: {
-    type: Date,
-    default: Date.now
-  },
-  endTime: {
-    type: Date
-  },
-  userIp: {
-    type: String
-  },
-  userAgent: {
-    type: String
   }
-}, {
-  timestamps: true,
-  collection: 'generations'
-});
 
-// Index for efficient queries
-generationSchema.index({ createdAt: -1 });
-generationSchema.index({ status: 1 });
-generationSchema.index({ modelId: 1, createdAt: -1 });
+  async updateProgress(progress, status = null) {
+    try {
+      const pool = database.getPool();
+      this.progress = Math.min(100, Math.max(0, progress));
 
-// Virtual for duration
-generationSchema.virtual('duration').get(function() {
-  if (this.endTime && this.startTime) {
-    return this.endTime - this.startTime;
-  }
-  return null;
-});
+      let query = 'UPDATE generations SET progress = ?';
+      let params = [this.progress];
 
-// Static methods
-generationSchema.statics.findByStatus = function(status) {
-  return this.find({ status }).sort({ createdAt: -1 });
-};
+      if (status) {
+        query += ', status = ?';
+        params.push(status);
+        this.status = status;
+      }
 
-generationSchema.statics.findByModelId = function(modelId, limit = 10) {
-  return this.find({ modelId })
-    .sort({ createdAt: -1 })
-    .limit(limit);
-};
+      query += ' WHERE jobId = ?';
+      params.push(this.jobId);
 
-generationSchema.statics.findProcessingJobs = function() {
-  return this.find({
-    status: 'processing',
-    startTime: {
-      $lt: new Date(Date.now() - 5 * 60 * 1000) // Older than 5 minutes
+      const [result] = await pool.execute(query, params);
+      return result;
+    } catch (error) {
+      console.error('❌ Progress update failed:', error);
+      throw error;
     }
-  });
-};
-
-// Instance methods
-generationSchema.methods.updateProgress = function(progress, status = null) {
-  this.progress = Math.min(100, Math.max(0, progress));
-  if (status) {
-    this.status = status;
-  }
-  return this.save();
-};
-
-generationSchema.methods.complete = function(result) {
-  this.status = 'completed';
-  this.progress = 100;
-  this.endTime = new Date();
-  this.processingTime = this.endTime - this.startTime;
-
-  if (result) {
-    this.imageUrl = result.imageUrl;
-    this.imagePath = result.imagePath;
-    this.prompt = result.prompt;
-    this.metadata = result.metadata;
   }
 
-  return this.save();
-};
+  async complete(result) {
+    try {
+      const pool = database.getPool();
 
-generationSchema.methods.fail = function(error) {
-  this.status = 'failed';
-  this.error = error;
-  this.endTime = new Date();
-  this.processingTime = this.endTime - this.startTime;
-  return this.save();
-};
+      const [updateResult] = await pool.execute(`
+        UPDATE generations
+        SET status = 'completed', progress = 100, endTime = NOW(),
+            processingTime = TIMESTAMPDIFF(MICROSECOND, createdAt, NOW()) / 1000,
+            imageUrl = ?, imagePath = ?, prompt = ?, metadata = ?
+        WHERE jobId = ?
+      `, [
+        result.imageUrl, result.imagePath, result.prompt,
+        JSON.stringify(result.metadata), this.jobId
+      ]);
 
-module.exports = mongoose.model('Generation', generationSchema);
+      this.status = 'completed';
+      this.progress = 100;
+      this.endTime = new Date();
+
+      if (result) {
+        this.imageUrl = result.imageUrl;
+        this.imagePath = result.imagePath;
+        this.prompt = result.prompt;
+        this.metadata = result.metadata;
+      }
+
+      return updateResult;
+    } catch (error) {
+      console.error('❌ Generation completion failed:', error);
+      throw error;
+    }
+  }
+
+  async fail(errorMessage) {
+    try {
+      const pool = database.getPool();
+
+      const [result] = await pool.execute(`
+        UPDATE generations
+        SET status = 'failed', error = ?, endTime = NOW(),
+            processingTime = TIMESTAMPDIFF(MICROSECOND, createdAt, NOW()) / 1000
+        WHERE jobId = ?
+      `, [errorMessage, this.jobId]);
+
+      this.status = 'failed';
+      this.error = errorMessage;
+      this.endTime = new Date();
+
+      return result;
+    } catch (error) {
+      console.error('❌ Generation fail operation failed:', error);
+      throw error;
+    }
+  }
+
+  static async findByJobId(jobId) {
+    try {
+      const pool = database.getPool();
+      const [rows] = await pool.execute(
+        'SELECT * FROM generations WHERE jobId = ?',
+        [jobId]
+      );
+      return rows.length > 0 ? rows[0] : null;
+    } catch (error) {
+      console.error('❌ findByJobId failed:', error);
+      throw error;
+    }
+  }
+
+  static async findByStatus(status, limit = 20) {
+    try {
+      const pool = database.getPool();
+      const [rows] = await pool.execute(
+        'SELECT * FROM generations WHERE status = ? ORDER BY createdAt DESC LIMIT ?',
+        [status, limit]
+      );
+      return rows;
+    } catch (error) {
+      console.error('❌ findByStatus failed:', error);
+      throw error;
+    }
+  }
+
+  static async findByModelId(modelId, limit = 10) {
+    try {
+      const pool = database.getPool();
+      const [rows] = await pool.execute(
+        'SELECT * FROM generations WHERE modelId = ? ORDER BY createdAt DESC LIMIT ?',
+        [modelId, limit]
+      );
+      return rows;
+    } catch (error) {
+      console.error('❌ findByModelId failed:', error);
+      throw error;
+    }
+  }
+
+  static async findHistory(options = {}) {
+    try {
+      const pool = database.getPool();
+      const { modelId, limit = 20, page = 1 } = options;
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+
+      let query = 'SELECT * FROM generations WHERE 1=1';
+      let params = [];
+
+      if (modelId) {
+        query += ' AND modelId = ?';
+        params.push(modelId);
+      }
+
+      query += ' ORDER BY createdAt DESC LIMIT ? OFFSET ?';
+      params.push(parseInt(limit), offset);
+
+      const [rows] = await pool.execute(query, params);
+
+      // Get total count
+      let countQuery = 'SELECT COUNT(*) as total FROM generations WHERE 1=1';
+      let countParams = [];
+
+      if (modelId) {
+        countQuery += ' AND modelId = ?';
+        countParams.push(modelId);
+      }
+
+      const [countRows] = await pool.execute(countQuery, countParams);
+      const total = countRows[0].total;
+
+      return {
+        data: rows,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      };
+    } catch (error) {
+      console.error('❌ findHistory failed:', error);
+      throw error;
+    }
+  }
+}
+
+module.exports = Generation;

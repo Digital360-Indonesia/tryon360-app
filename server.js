@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 // Import database connection
@@ -75,19 +76,32 @@ app.use((error, req, res, next) => {
 app.use('/api/models', require('./src/routes/models'));
 app.use('/api/generation', require('./src/routes/generation'));
 
-// In production, serve React app for any non-API routes
+// Serve React app for any non-API routes (both production and development)
 if (process.env.NODE_ENV === 'production') {
+  // In production, serve built React app
+  app.use(express.static(path.join(__dirname, 'build')));
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'build/index.html'));
   });
 } else {
-  // In development, return 404 for non-API routes
-  app.use('*', (req, res) => {
-    res.status(404).json({
-      success: false,
-      error: 'Endpoint not found'
+  // In development, also serve the built React app
+  // Check if build directory exists, if not serve a simple message
+  const buildPath = path.join(__dirname, 'build');
+  if (fs.existsSync(buildPath)) {
+    app.use(express.static(buildPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(buildPath, 'index.html'));
     });
-  });
+  } else {
+    // If no build directory exists, return helpful message
+    app.use('*', (req, res) => {
+      res.status(404).json({
+        success: false,
+        error: 'Frontend build not found. Please run "npm run build" in the client directory first.',
+        suggestion: 'The React frontend needs to be built before it can be served in development mode.'
+      });
+    });
+  }
 }
 
 // Start server
@@ -102,11 +116,18 @@ app.listen(PORT, async () => {
     console.log('🎨 Frontend and Backend combined');
   }
 
-  // Connect to MongoDB
+  // Connect to MySQL
   try {
+    console.log('🔗 Connecting to MySQL database...');
     await database.connect();
+
+    // Create tables if they don't exist
+    console.log('🏗️ Ensuring database tables exist...');
+    await database.createTables();
+
+    console.log('✅ MySQL connection established successfully!');
   } catch (error) {
-    console.error('❌ Failed to connect to MongoDB:', error);
+    console.error('❌ Failed to connect to MySQL:', error);
     process.exit(1);
   }
 
