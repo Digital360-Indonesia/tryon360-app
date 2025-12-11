@@ -29,9 +29,7 @@ class AIService {
    * Get the correct generated directory path based on environment
    */
   getGeneratedDir() {
-    return process.env.NODE_ENV === 'production' 
-      ? path.join(__dirname, '../../data/generated')  // In production, use /app/data/generated
-      : path.join(__dirname, '../../generated');      // In development, use /app/generated
+    return path.join(__dirname, '../../generated');
   }
 
   /**

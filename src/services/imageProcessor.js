@@ -247,9 +247,7 @@ class ImageProcessor {
    */
   async cleanupOldFiles(maxAgeHours = 24) {
     const uploadsDir = path.join(__dirname, '../../uploads');
-    const generatedDir = process.env.NODE_ENV === 'production' 
-      ? path.join(__dirname, '../../data/generated')  // In production, use /app/data/generated
-      : path.join(__dirname, '../../generated');      // In development, use /app/generated
+    const generatedDir = path.join(__dirname, '../../generated');
     
     const maxAge = maxAgeHours * 60 * 60 * 1000; // Convert to milliseconds
     const now = Date.now();

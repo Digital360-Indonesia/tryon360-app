@@ -19,11 +19,8 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'build')));
 }
 
-// Handle generated files serving based on environment
-const generatedPath = process.env.NODE_ENV === 'production' 
-  ? path.join(__dirname, 'data/generated')  // In production, use /app/data/generated
-  : path.join(__dirname, 'generated');      // In development, use /app/generated
-
+// Serve generated files from single location
+const generatedPath = path.join(__dirname, 'generated');
 console.log(`📁 Serving generated files from: ${generatedPath}`);
 app.use('/generated', express.static(generatedPath));
 
