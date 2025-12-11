@@ -182,10 +182,31 @@ router.post('/try-on', upload.fields([
 
     // Process product image
     console.log('🖼️ Processing product image...');
-    const productResult = await imageProcessor.processUpload(req.files.productImage[0], 'product');
-    processedFiles.product = productResult;
-    uploadedImages.push(productResult.path);
-    console.log('✅ Product image processed:', productResult.path);
+    console.log('📋 Product file info:', {
+      originalName: req.files.productImage[0].originalname,
+      mimetype: req.files.productImage[0].mimetype,
+      size: req.files.productImage[0].size,
+      bufferLength: req.files.productImage[0].buffer.length
+    });
+
+    try {
+      const productResult = await imageProcessor.processUpload(req.files.productImage[0], 'product');
+      processedFiles.product = productResult;
+      uploadedImages.push(productResult.path);
+      console.log('✅ Product image processed:', {
+        path: productResult.path,
+        filename: productResult.filename,
+        size: productResult.size,
+        hasAnalysis: !!productResult.analysis
+      });
+    } catch (processError) {
+      console.error('💥 Product image processing failed:', {
+        error: processError.message,
+        stack: processError.stack,
+        originalName: req.files.productImage[0].originalname
+      });
+      throw processError;
+    }
 
     updateProgress('Processing detail uploads', 30);
 
