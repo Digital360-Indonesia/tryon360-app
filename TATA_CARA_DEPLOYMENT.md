@@ -11,6 +11,7 @@ Sebelum memulai deployment, pastikan Anda memiliki:
 - API Keys yang diperlukan:
   - Gemini API Key
   - Flux API Key
+  - OpenAI API Key (opsional)
 
 ## 🏗️ Struktur Proyek (Monolithic)
 
@@ -36,7 +37,7 @@ garment-tryon-app/
 
 ## 🚀 Cara Deployment
 
-### 🎯 Cara Paling Simple (Recommended)
+### 🎯 Super Simple Deployment (Recommended)
 
 ```bash
 # 1. Clone repository
@@ -47,34 +48,29 @@ cd garment-tryon-app
 cp .env.example .env
 # Edit .env dengan API keys Anda
 
-# 3. Install + Build (one command)
-npm run setup
+# 3. Install + Build everything
+npm run setup:prod  # Untuk production
+# atau
+npm run setup:dev   # Untuk development
 
 # 4. Jalankan aplikasi
-npm start
+npm start           # Production
+# atau
+npm run dev         # Development
 ```
 
 Aplikasi akan berjalan di `http://localhost:3000`
 
 ---
 
-### 📋 Detail Step-by-Step
+### 📋 Penjelasan Script
 
-#### 1. Setup Environment
-```bash
-# Clone repository
-git clone <your-repo-url> garment-tryon-app
-cd garment-tryon-app
+- **`npm run setup:dev`** - Install semua dependencies + build (development)
+- **`npm run setup:prod`** - Install production dependencies + build (production)
+- **`npm start`** - Jalankan server di production mode
+- **`npm run dev`** - Jalankan server di development mode dengan auto-reload
 
-# Install semua dependencies (backend + frontend)
-npm run install
-```
-
-#### 2. Konfigurasi Environment Variables
-```bash
-# Copy template environment
-cp .env.example .env
-```
+### Environment Variables
 
 Edit file `.env`:
 ```env
@@ -83,34 +79,22 @@ FLUX_API_KEY=your_flux_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here  # Opsional
 ```
 
-#### 3. Build Frontend
-```bash
-# Build production version (React → Static files)
-npm run build
-```
+## 🔧 Production Deployment
 
-#### 4. Jalankan Aplikasi
-
-```bash
-# Mode development
-npm run dev
-
-# Atau jalankan langsung
-npm start
-```
-
-Aplikasi akan berjalan di `http://localhost:3000`
-
-### 6. Deployment ke Production
-
-#### Opsi 1: Direct Deployment (VPS/Dedicated Server)
+### Opsi 1: Direct Deployment (VPS/Dedicated Server)
 
 ```bash
 # Install PM2 untuk process management
 npm install -g pm2
 
-# Setup lengkap (install dependencies + build)
-npm run setup
+# Clone dan setup
+git clone <your-repo-url> garment-tryon-app
+cd garment-tryon-app
+cp .env.example .env
+# Edit .env dengan production API keys
+
+# Setup lengkap untuk production
+npm run setup:prod
 
 # Jalankan dengan PM2
 pm2 start server.js --name "garment-tryon"
@@ -120,7 +104,7 @@ pm2 save
 pm2 startup
 ```
 
-#### Opsi 2: Deployment dengan Docker
+### Opsi 2: Deployment dengan Docker
 
 Buat `Dockerfile`:
 ```dockerfile
@@ -132,14 +116,11 @@ WORKDIR /app
 COPY package*.json ./
 COPY client/package*.json ./client/
 
-# Install all dependencies
-RUN npm run install
+# Install production dependencies dan build
+RUN npm run setup:prod
 
-# Copy source code
+# Copy source code (excluding node_modules)
 COPY . .
-
-# Build frontend
-RUN npm run build
 
 # Expose port
 EXPOSE 3000
@@ -154,7 +135,7 @@ docker build -t garment-tryon .
 docker run -p 3000:3000 --env-file .env garment-tryon
 ```
 
-#### Opsi 3: Deployment dengan Nginx Reverse Proxy
+### Opsi 3: Deployment dengan Nginx Reverse Proxy
 
 Install Nginx:
 ```bash
@@ -180,13 +161,6 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 }
-```
-
-Aktifkan site:
-```bash
-sudo ln -s /etc/nginx/sites-available/garment-tryon /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
 ```
 
 ## 🔧 Konfigurasi Tambahan
@@ -226,8 +200,8 @@ mkdir -p $BACKUP_DIR
 # Backup generated files
 tar -czf $BACKUP_DIR/generated_$DATE.tar.gz -C $APP_DIR generated/ uploads/
 
-# Backup database jika ada
-# mysqldump -u username -p database > $BACKUP_DIR/db_$DATE.sql
+# Backup environment file
+cp $APP_DIR/.env $BACKUP_DIR/env_$DATE
 
 # Hapus backup lama (opsional)
 find $BACKUP_DIR -name "*.tar.gz" -mtime +7 -delete
@@ -259,16 +233,9 @@ pm2 restart garment-tryon
 
 ### 2. Health Check
 
-Tambahkan endpoint health check di `server.js`:
-```javascript
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
-```
+Aplikasi sudah memiliki endpoint health check:
+- `GET /health`
+- `GET /api/health`
 
 ## 🚨 Troubleshooting
 
@@ -297,40 +264,23 @@ sudo chmod -R 755 /path/to/garment-tryon-app
 - Verifikasi konfigurasi di file `.env`
 - Restart server setelah mengubah `.env`
 
-### 4. Frontend Build Gagal
+### 4. Build Gagal
 
 ```bash
-# Clear cache
-cd client
-rm -rf node_modules package-lock.json
-npm install
-
-# Build ulang
-cd ..
-npm run build
+# Clean install
+rm -rf node_modules client/node_modules client/build
+npm run setup:dev  # atau setup:prod
 ```
 
 ## 📝 Checklist Production
 
 - [ ] Environment variables sudah dikonfigurasi
 - [ ] API keys valid dan aktif
-- [ ] Frontend sudah di-build
+- [ ] Frontend sudah di-build (`npm run setup:prod`)
 - [ ] Firewall sudah dikonfigurasi
 - [ ] SSL/HTTPS sudah di-setup
 - [ ] Backup sudah dijadwalkan
 - [ ] Monitoring sudah aktif
-- [ ] Error handling sudah diuji
-- [ ] Load testing sudah dilakukan (opsional)
-
-## 🆘 Bantuan
-
-Jika mengalami masalah:
-
-1. Cek logs: `pm2 logs garment-tryon` atau `journalctl -u nginx`
-2. Pastikan semua dependencies terinstall
-3. Verifikasi konfigurasi environment
-4. Test API endpoints secara manual
-5. Cek resource usage (CPU, RAM, disk)
 
 ## 🔄 Update Aplikasi
 
@@ -340,12 +290,32 @@ Untuk update ke versi terbaru:
 # Pull changes
 git pull origin main
 
-# Install dependencies baru (jika ada)
-npm run install  # Install semua dependencies
-
-# Build ulang
-npm run build
+# Setup ulang (jika ada dependencies baru)
+npm run setup:prod
 
 # Restart server
 pm2 restart garment-tryon
 ```
+
+## 🆘 Bantuan
+
+Jika mengalami masalah:
+
+1. Cek logs: `pm2 logs garment-tryon`
+2. Pastikan semua dependencies terinstall
+3. Verifikasi konfigurasi environment
+4. Test API endpoints secara manual
+5. Cek resource usage (CPU, RAM, disk)
+
+## 🎉 Summary
+
+Deployment hanya butuh 4 command:
+
+```bash
+git clone <repo-url>
+cd garment-tryon-app
+cp .env.example .env && nano .env
+npm run setup:prod && npm start
+```
+
+Simple dan cepat! 🚀
