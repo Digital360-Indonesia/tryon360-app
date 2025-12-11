@@ -43,7 +43,19 @@ router.post('/try-on', upload.fields([
   { name: 'detail3', maxCount: 1 }
 ]), async (req, res) => {
   const jobId = uuidv4();
-  
+
+  console.log('🚀 === GENERATION REQUEST STARTED ===');
+  console.log('🆔 Job ID:', jobId);
+  console.log('📊 Request Data:', {
+    body: req.body,
+    files: req.files ? Object.keys(req.files) : 'no files',
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    contentType: req.get('Content-Type'),
+    contentLength: req.get('Content-Length'),
+    timestamp: new Date().toISOString()
+  });
+
   try {
     
     // Extract form data
@@ -54,14 +66,29 @@ router.post('/try-on', upload.fields([
       garmentDescription,
       embroideryPosition1,
       embroideryDescription1,
-      embroideryPosition2, 
+      embroideryPosition2,
       embroideryDescription2,
       embroideryPosition3,
       embroideryDescription3
     } = req.body;
 
+    console.log('📝 Extracted Data:', {
+      modelId,
+      pose,
+      providerId,
+      garmentDescription,
+      hasProductImage: !!req.files?.productImage,
+      hasDetail1: !!req.files?.detail1,
+      hasDetail2: !!req.files?.detail2,
+      hasDetail3: !!req.files?.detail3
+    });
+
     // Validate required fields
     if (!modelId || !PROFESSIONAL_MODELS[modelId]) {
+      console.log('❌ Invalid model ID:', {
+        modelId,
+        availableModels: Object.keys(PROFESSIONAL_MODELS)
+      });
       return res.status(400).json({
         success: false,
         error: 'Valid model ID is required'
@@ -69,11 +96,16 @@ router.post('/try-on', upload.fields([
     }
 
     if (!req.files || !req.files.productImage) {
+      console.log('❌ Missing product image:', {
+        files: req.files ? Object.keys(req.files) : 'none'
+      });
       return res.status(400).json({
         success: false,
         error: 'Product image is required'
       });
     }
+
+    console.log('✅ Validation passed, initializing services...');
 
     // Initialize job tracking in MongoDB
     const generation = new Generation({
@@ -87,34 +119,36 @@ router.post('/try-on', upload.fields([
       userAgent: req.get('User-Agent')
     });
 
+    console.log('💾 Saving to MongoDB...');
     await generation.save();
+    console.log('✅ MongoDB save successful');
 
     // Update progress
     const updateProgress = async (stage, progress) => {
       try {
+        console.log(`📊 Progress: ${stage} (${progress}%)`);
         await Generation.updateOne(
           { jobId },
-          {
-            progress,
-            // You could add a stage field if needed
-            // metadata: { lastStage: stage }
-          }
+          { progress }
         );
       } catch (error) {
-        // Error updating progress
+        console.error('❌ Progress update failed:', error);
       }
     };
 
     updateProgress('Processing uploads', 10);
+    console.log('🔄 Starting image processing...');
 
     // Process uploaded images
     const processedFiles = {};
     const uploadedImages = [];
 
     // Process product image
+    console.log('🖼️ Processing product image...');
     const productResult = await imageProcessor.processUpload(req.files.productImage[0], 'product');
     processedFiles.product = productResult;
     uploadedImages.push(productResult.path);
+    console.log('✅ Product image processed:', productResult.path);
 
     updateProgress('Processing detail uploads', 30);
 
@@ -125,25 +159,32 @@ router.post('/try-on', upload.fields([
     for (let i = 0; i < detailFiles.length; i++) {
       const detailKey = detailFiles[i];
       if (req.files[detailKey] && req.files[detailKey][0]) {
+        console.log(`🖼️ Processing detail ${i + 1}: ${detailKey}`);
         const detailResult = await imageProcessor.processUpload(req.files[detailKey][0], detailKey);
         processedFiles[detailKey] = detailResult;
         uploadedImages.push(detailResult.path);
+        console.log(`✅ Detail ${i + 1} processed:`, detailResult.path);
 
         // Build embroidery detail
         const positionKey = `embroideryPosition${i + 1}`;
         const descriptionKey = `embroideryDescription${i + 1}`;
-        
+
         if (req.body[positionKey] && req.body[descriptionKey]) {
           embroideryDetails.push({
             position: req.body[positionKey],
             description: req.body[descriptionKey],
             imagePath: detailResult.path
           });
+          console.log(`🎨 Embroidery detail ${i + 1}:`, {
+            position: req.body[positionKey],
+            description: req.body[descriptionKey]
+          });
         }
       }
     }
 
     updateProgress('Building generation prompt', 50);
+    console.log('🔨 Building generation request...');
 
     // Prepare generation request with product analysis
     const generationRequest = {
@@ -162,22 +203,41 @@ router.post('/try-on', upload.fields([
       jobId
     };
 
+    console.log('📋 Generation request prepared:', {
+      providerId,
+      modelId,
+      pose,
+      garmentDescription,
+      uploadedImagesCount: uploadedImages.length,
+      embroideryDetailsCount: embroideryDetails.length
+    });
+
     // Validate provider capabilities
+    console.log('🔍 Validating provider capabilities...');
     const providerValidation = aiService.validateProviderCapabilities(providerId, generationRequest);
     if (!providerValidation.isValid) {
+      console.log('❌ Provider validation failed:', providerValidation.errors);
       return res.status(400).json({
         success: false,
         error: 'Provider validation failed',
         details: providerValidation.errors
       });
     }
+    console.log('✅ Provider validation passed');
 
     updateProgress('Generating image', 70);
+    console.log('🎨 Starting AI generation...');
 
     // Generate try-on image
     const generationResult = await aiService.generateTryOn(generationRequest);
+    console.log('✅ AI generation completed:', {
+      imagePath: generationResult.imagePath,
+      provider: generationResult.provider,
+      prompt: generationResult.prompt?.substring(0, 100) + '...'
+    });
 
     updateProgress('Finalizing', 90);
+    console.log('💾 Updating job status...');
 
     // Update job status in MongoDB
     await generation.complete({
@@ -193,9 +253,10 @@ router.post('/try-on', upload.fields([
     });
 
     updateProgress('Complete', 100);
+    console.log('🎉 Generation completed successfully!');
 
     // Return result
-    res.json({
+    const response = {
       success: true,
       jobId: jobId,
       result: {
@@ -211,24 +272,48 @@ router.post('/try-on', upload.fields([
         }))
       },
       processingTime: generation.processingTime
+    };
+
+    console.log('📤 Sending response:', {
+      success: response.success,
+      jobId: response.jobId,
+      imageUrl: response.result.imageUrl,
+      processingTime: response.processingTime
     });
 
+    res.json(response);
+
   } catch (error) {
+    console.error('💥 === GENERATION ERROR ===');
+    console.error('❌ Error details:', {
+      jobId,
+      error: error.message,
+      stack: error.stack,
+      body: req.body,
+      files: req.files ? Object.keys(req.files) : 'no files',
+      ip: req.ip,
+      timestamp: new Date().toISOString()
+    });
 
     // Update job status in MongoDB
     try {
       if (generation) {
+        console.log('💾 Marking job as failed...');
         await generation.fail(error.message);
+        console.log('✅ Job marked as failed');
       }
     } catch (dbError) {
-      // Database error updating job status
+      console.error('❌ Database error updating job status:', dbError);
     }
 
-    res.status(500).json({
+    const response = {
       success: false,
       jobId: jobId,
       error: error.message
-    });
+    };
+
+    console.log('📤 Sending error response:', response);
+    res.status(500).json(response);
   }
 });
 
