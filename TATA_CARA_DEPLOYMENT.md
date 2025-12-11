@@ -8,6 +8,7 @@ Sebelum memulai deployment, pastikan Anda memiliki:
 - npm atau yarn
 - Git
 - Server/VPS (untuk production)
+- MongoDB (local atau cloud seperti MongoDB Atlas)
 - API Keys yang diperlukan:
   - Gemini API Key
   - Flux API Key
@@ -23,7 +24,8 @@ garment-tryon-app/
 ├── .env.example          # Template environment variables
 ├── .gitignore            # File yang diabaikan Git
 ├── src/                  # Backend source code
-│   ├── config/          # Konfigurasi AI providers dan models
+│   ├── config/          # Konfigurasi (AI providers, database)
+│   ├── models/          # MongoDB models/schemas
 │   ├── routes/          # API routes
 │   └── services/        # Business logic
 ├── client/              # Frontend React app
@@ -76,9 +78,17 @@ Hanya **4 script** yang tersedia:
 
 Edit file `.env`:
 ```env
+# Database Configuration
+MONGODB_URI=mongodb://localhost:27017/garment-tryon
+
+# AI Provider API Keys
 GEMINI_API_KEY=your_gemini_api_key_here
 FLUX_API_KEY=your_flux_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here  # Opsional
+
+# Server Configuration
+PORT=3000
+NODE_ENV=development
 ```
 
 ## 🔧 Production Deployment
@@ -236,8 +246,35 @@ pm2 restart garment-tryon
 ### 2. Health Check
 
 Aplikasi sudah memiliki endpoint health check:
-- `GET /health`
-- `GET /api/health`
+- `GET /health` - Menampilkan status server dan database
+- `GET /api/health` - Sama dengan /health
+
+### 3. MongoDB Setup
+
+#### Local MongoDB
+```bash
+# Install MongoDB (Ubuntu/Debian)
+wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+sudo apt-get update
+sudo apt-get install -y mongodb-org
+
+# Start MongoDB
+sudo systemctl start mongod
+sudo systemctl enable mongod
+```
+
+#### MongoDB Atlas (Cloud)
+1. Buka [MongoDB Atlas](https://www.mongodb.com/atlas)
+2. Create free cluster
+3. Create database user
+4. Whitelist IP address (0.0.0.0/0 untuk all access)
+5. Copy connection string ke `.env`
+
+Contoh connection string:
+```
+MONGODB_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/garment-tryon?retryWrites=true&w=majority
+```
 
 ## 🚨 Troubleshooting
 
@@ -266,7 +303,23 @@ sudo chmod -R 755 /path/to/garment-tryon-app
 - Verifikasi konfigurasi di file `.env`
 - Restart server setelah mengubah `.env`
 
-### 4. Build Gagal
+### 4. MongoDB Connection Error
+
+```bash
+# Cek MongoDB status
+sudo systemctl status mongod
+
+# Restart MongoDB
+sudo systemctl restart mongod
+
+# Cek logs
+sudo tail -f /var/log/mongodb/mongod.log
+
+# Test connection
+mongosh "mongodb://localhost:27017/garment-tryon"
+```
+
+### 5. Build Gagal
 
 ```bash
 # Clean install
@@ -277,11 +330,12 @@ npm run setup:dev  # atau setup:prod
 ## 📝 Checklist Production
 
 - [ ] Environment variables sudah dikonfigurasi
+- [ ] MongoDB connection sudah di-tes
 - [ ] API keys valid dan aktif
 - [ ] Frontend sudah di-build (`npm run setup:prod`)
 - [ ] Firewall sudah dikonfigurasi
 - [ ] SSL/HTTPS sudah di-setup
-- [ ] Backup sudah dijadwalkan
+- [ ] Backup sudah dijadwalkan (database + files)
 - [ ] Monitoring sudah aktif
 
 ## 🔄 Update Aplikasi
