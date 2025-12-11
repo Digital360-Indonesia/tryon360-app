@@ -36,54 +36,60 @@ garment-tryon-app/
 
 ## 🚀 Cara Deployment
 
-### 1. Setup Environment
+### 🎯 Cara Paling Simple (Recommended)
 
+```bash
+# 1. Clone repository
+git clone <your-repo-url> garment-tryon-app
+cd garment-tryon-app
+
+# 2. Setup environment
+cp .env.example .env
+# Edit .env dengan API keys Anda
+
+# 3. Install + Build (one command)
+npm run setup
+
+# 4. Jalankan aplikasi
+npm start
+```
+
+Aplikasi akan berjalan di `http://localhost:3000`
+
+---
+
+### 📋 Detail Step-by-Step
+
+#### 1. Setup Environment
 ```bash
 # Clone repository
 git clone <your-repo-url> garment-tryon-app
 cd garment-tryon-app
 
 # Install semua dependencies (backend + frontend)
-npm run install:all
-
-# Atau untuk production:
-npm run install:prod
+npm run install
 ```
 
-### 2. Konfigurasi Environment Variables
-
+#### 2. Konfigurasi Environment Variables
 ```bash
 # Copy template environment
 cp .env.example .env
-
-# Edit .env file dengan API keys Anda
-nano .env
 ```
 
-Isi nilai berikut:
+Edit file `.env`:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 FLUX_API_KEY=your_flux_api_key_here
-FRONTEND_PORT=3000
-BACKEND_PORT=3000
+OPENAI_API_KEY=your_openai_api_key_here  # Opsional
 ```
 
-### 3. Build Frontend
-
+#### 3. Build Frontend
 ```bash
-# Build production version (build frontend dan salin ke root)
+# Build production version (React → Static files)
 npm run build
 ```
 
-### 4. One-Command Setup (Optional)
-
-```bash
-# Install semua dependencies + build dalam satu command
-npm run setup         # Untuk development
-npm run setup:prod    # Untuk production
-```
-
-### 5. Jalankan di Development
+#### 4. Jalankan Aplikasi
 
 ```bash
 # Mode development
@@ -104,7 +110,7 @@ Aplikasi akan berjalan di `http://localhost:3000`
 npm install -g pm2
 
 # Setup lengkap (install dependencies + build)
-npm run setup:prod
+npm run setup
 
 # Jalankan dengan PM2
 pm2 start server.js --name "garment-tryon"
@@ -127,7 +133,7 @@ COPY package*.json ./
 COPY client/package*.json ./client/
 
 # Install all dependencies
-RUN npm run install:prod
+RUN npm run install
 
 # Copy source code
 COPY . .
@@ -335,10 +341,7 @@ Untuk update ke versi terbaru:
 git pull origin main
 
 # Install dependencies baru (jika ada)
-npm run install:all  # Install semua dependencies
-
-# Atau untuk production:
-npm run install:prod
+npm run install  # Install semua dependencies
 
 # Build ulang
 npm run build
