@@ -44,6 +44,7 @@ router.post('/try-on', upload.fields([
 ]), async (req, res) => {
   const jobId = uuidv4();
   req.requestTime = Date.now(); // Track start time
+  let generationResult = null; // Declare generationResult variable outside try blocks
 
   console.log('🚀 === GENERATION REQUEST STARTED ===');
   console.log('🆔 Job ID:', jobId);
@@ -155,10 +156,7 @@ router.post('/try-on', upload.fields([
       try {
         console.log(`📊 Progress: ${stage} (${progress}%)`);
         console.log('🔄 Updating MongoDB progress...');
-        const result = await Generation.updateOne(
-          { jobId },
-          { progress }
-        );
+        const result = await generation.updateProgress(progress);
         console.log('✅ Progress updated:', {
           matchedCount: result.matchedCount,
           modifiedCount: result.modifiedCount,
@@ -347,7 +345,7 @@ router.post('/try-on', upload.fields([
 
       // Generate try-on image
       console.log('⏳ Waiting for AI response...');
-      const generationResult = await aiService.generateTryOn(generationRequest);
+      generationResult = await aiService.generateTryOn(generationRequest);
 
       console.log('✅ AI generation completed successfully!', {
         imagePath: generationResult.imagePath,

@@ -68,13 +68,13 @@ class AIService {
    */
   async generateTryOn(request) {
     const { providerId, modelId, pose, garmentDescription, embroideryDetails = [], uploadedImages = [] } = request;
-    
+
     // Validate provider
     const provider = this.providers[providerId];
     if (!provider) {
       throw new Error(`AI provider ${providerId} not found`);
     }
-    
+
     if (provider.status !== 'active') {
       throw new Error(`AI provider ${providerId} is not currently active`);
     }
@@ -88,33 +88,47 @@ class AIService {
       productAnalysis: request.productAnalysis || null
     });
 
-    // Generate based on provider with retry logic
+    // Generate based on provider with retry logic and fallback
     const retrySettings = this.settings[providerId];
-    switch (providerId) {
-      case 'flux_kontext':
-        return await this.retryWithBackoff(
-          () => this.generateWithFlux(prompt, uploadedImages, request),
-          retrySettings.retries,
-          providerId
-        );
-      
-            case 'gemini_2_5_flash_image':
-      case 'nano_banana':
-        return await this.retryWithBackoff(
-          () => this.generateWithNanoBanana(prompt, uploadedImages, request),
-          retrySettings.retries,
-          providerId
-        );
+    try {
+      switch (providerId) {
+        case 'flux_kontext':
+          return await this.retryWithBackoff(
+            () => this.generateWithFlux(prompt, uploadedImages, request),
+            retrySettings.retries,
+            providerId
+          );
 
-      case 'imagen_4_ultra':
+        case 'gemini_2_5_flash_image':
+        case 'nano_banana':
+          return await this.retryWithBackoff(
+            () => this.generateWithNanoBanana(prompt, uploadedImages, request),
+            retrySettings.retries,
+            providerId
+          );
+
+        case 'imagen_4_ultra':
+          return await this.retryWithBackoff(
+            () => this.generateWithImagen4Ultra(prompt, uploadedImages, request),
+            retrySettings.retries,
+            providerId
+          );
+
+        default:
+          throw new Error(`Unsupported provider: ${providerId}`);
+      }
+    } catch (error) {
+      // If flux_kontext fails with 402 (payment), fallback to gemini
+      if (providerId === 'flux_kontext' && error.message.includes('402')) {
+        console.log('💳 Flux API payment required, falling back to Gemini 2.5 Flash...');
+        const fallbackSettings = this.settings['gemini_2_5_flash_image'];
         return await this.retryWithBackoff(
-          () => this.generateWithImagen4Ultra(prompt, uploadedImages, request),
-          retrySettings.retries,
-          providerId
+          () => this.generateWithNanoBanana(prompt, uploadedImages, { ...request, providerId: 'gemini_2_5_flash_image' }),
+          fallbackSettings.retries,
+          'gemini_2_5_flash_image'
         );
-      
-      default:
-        throw new Error(`Unsupported provider: ${providerId}`);
+      }
+      throw error;
     }
   }
 

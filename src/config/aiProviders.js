@@ -172,7 +172,7 @@ const GENERATION_SETTINGS = {
 
 const DEFAULT_GENERATION_CONFIG = {
   defaultProvider: 'gemini_2_5_flash_image',
-  fallbackProvider: 'flux_kontext',
+  fallbackProvider: 'nano_banana',
   maxConcurrentGenerations: 3,
   imageOptimization: {
     outputFormat: 'jpeg',
