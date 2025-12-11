@@ -43,9 +43,11 @@ router.post('/try-on', upload.fields([
   { name: 'detail3', maxCount: 1 }
 ]), async (req, res) => {
   const jobId = uuidv4();
+  req.requestTime = Date.now(); // Track start time
 
   console.log('🚀 === GENERATION REQUEST STARTED ===');
   console.log('🆔 Job ID:', jobId);
+  console.log('⏰ Request started at:', new Date(req.requestTime).toISOString());
   console.log('📊 Request Data:', {
     body: req.body,
     files: req.files ? Object.keys(req.files) : 'no files',
@@ -214,14 +216,39 @@ router.post('/try-on', upload.fields([
     const detailFiles = ['detail1', 'detail2', 'detail3'];
     const embroideryDetails = [];
 
+    console.log(`🔍 Found ${req.files ? Object.keys(req.files).length : 0} total files`);
+    console.log('📋 All available files:', Object.keys(req.files || {}));
+
     for (let i = 0; i < detailFiles.length; i++) {
       const detailKey = detailFiles[i];
       if (req.files[detailKey] && req.files[detailKey][0]) {
         console.log(`🖼️ Processing detail ${i + 1}: ${detailKey}`);
-        const detailResult = await imageProcessor.processUpload(req.files[detailKey][0], detailKey);
-        processedFiles[detailKey] = detailResult;
-        uploadedImages.push(detailResult.path);
-        console.log(`✅ Detail ${i + 1} processed:`, detailResult.path);
+        console.log(`📋 Detail ${i + 1} file info:`, {
+          originalName: req.files[detailKey][0].originalname,
+          mimetype: req.files[detailKey][0].mimetype,
+          size: req.files[detailKey][0].size,
+          bufferLength: req.files[detailKey][0].buffer.length
+        });
+
+        try {
+          const detailResult = await imageProcessor.processUpload(req.files[detailKey][0], detailKey);
+          processedFiles[detailKey] = detailResult;
+          uploadedImages.push(detailResult.path);
+          console.log(`✅ Detail ${i + 1} processed:`, {
+            path: detailResult.path,
+            filename: detailResult.filename,
+            size: detailResult.size,
+            hasAnalysis: !!detailResult.analysis
+          });
+        } catch (detailError) {
+          console.error(`💥 Detail ${i + 1} processing failed:`, {
+            error: detailError.message,
+            stack: detailError.stack,
+            detailKey,
+            originalName: req.files[detailKey][0].originalname
+          });
+          throw detailError;
+        }
 
         // Build embroidery detail
         const positionKey = `embroideryPosition${i + 1}`;
@@ -235,11 +262,21 @@ router.post('/try-on', upload.fields([
           });
           console.log(`🎨 Embroidery detail ${i + 1}:`, {
             position: req.body[positionKey],
-            description: req.body[descriptionKey]
+            description: req.body[descriptionKey],
+            imagePath: detailResult.path
           });
         }
+      } else {
+        console.log(`⚪ No detail file found for ${detailKey}`);
       }
     }
+
+    console.log('📊 Processing summary:', {
+      totalProcessedFiles: Object.keys(processedFiles).length,
+      processedFileTypes: Object.keys(processedFiles),
+      uploadedImagesCount: uploadedImages.length,
+      embroideryDetailsCount: embroideryDetails.length
+    });
 
     updateProgress('Building generation prompt', 50);
     console.log('🔨 Building generation request...');
@@ -285,14 +322,62 @@ router.post('/try-on', upload.fields([
 
     updateProgress('Generating image', 70);
     console.log('🎨 Starting AI generation...');
+    console.log('🔍 AI Service Status Check...');
 
-    // Generate try-on image
-    const generationResult = await aiService.generateTryOn(generationRequest);
-    console.log('✅ AI generation completed:', {
-      imagePath: generationResult.imagePath,
-      provider: generationResult.provider,
-      prompt: generationResult.prompt?.substring(0, 100) + '...'
-    });
+    try {
+      // Check AI service status before generation
+      const aiStatus = aiService.getProviderStatus(providerId);
+      console.log('🤖 AI Provider Status:', aiStatus);
+
+      console.log('📤 Sending to AI Service...');
+      console.log('📋 Full generation request:', {
+        providerId,
+        modelId,
+        pose,
+        garmentDescription: garmentDescription || 'uploaded garment',
+        uploadedImagesCount: uploadedImages.length,
+        uploadedImagesPaths: uploadedImages,
+        embroideryDetailsCount: embroideryDetails.length,
+        embroideryDetails: embroideryDetails,
+        hasOriginalProductBuffer: !!generationRequest.originalProductBuffer,
+        originalProductBufferLength: generationRequest.originalProductBuffer?.length,
+        originalProductMimeType: generationRequest.originalProductMimeType,
+        jobId
+      });
+
+      // Generate try-on image
+      console.log('⏳ Waiting for AI response...');
+      const generationResult = await aiService.generateTryOn(generationRequest);
+
+      console.log('✅ AI generation completed successfully!', {
+        imagePath: generationResult.imagePath,
+        provider: generationResult.provider,
+        prompt: generationResult.prompt?.substring(0, 100) + '...',
+        hasMetadata: !!generationResult.metadata,
+        metadataKeys: generationResult.metadata ? Object.keys(generationResult.metadata) : 'none',
+        processingTime: generationResult.processingTime || 'not provided'
+      });
+
+      // Validate result
+      if (!generationResult.imagePath) {
+        throw new Error('AI generation completed but no imagePath returned');
+      }
+
+      if (!generationResult.prompt) {
+        throw new Error('AI generation completed but no prompt returned');
+      }
+
+    } catch (aiError) {
+      console.error('💥 AI generation failed:', {
+        error: aiError.message,
+        stack: aiError.stack,
+        providerId,
+        modelId,
+        jobId,
+        generationRequestKeys: Object.keys(generationRequest)
+      });
+      throw aiError;
+    }
 
     updateProgress('Finalizing', 90);
     console.log('💾 Updating job status...');
@@ -363,7 +448,32 @@ router.post('/try-on', upload.fields([
       success: response.success,
       jobId: response.jobId,
       imageUrl: response.result.imageUrl,
+      imagePath: response.result.imagePath,
+      provider: response.result.provider,
+      hasPrompt: !!response.result.prompt,
+      promptLength: response.result.prompt?.length || 0,
+      hasMetadata: !!response.result.metadata,
+      metadataKeys: response.result.metadata ? Object.keys(response.result.metadata) : 'none',
+      processedFilesCount: response.result.processedFiles?.length || 0,
       processingTime: response.processingTime
+    });
+
+    // Final validation before sending
+    if (!response.result.imageUrl) {
+      console.error('💥 CRITICAL: No imageUrl in response!');
+      throw new Error('Response missing imageUrl');
+    }
+
+    if (!response.result.imagePath) {
+      console.error('💥 CRITICAL: No imagePath in response!');
+      throw new Error('Response missing imagePath');
+    }
+
+    console.log('🎯 === GENERATION FLOW COMPLETED SUCCESSFULLY ===');
+    console.log('🏁 Total processing time:', {
+      startTime: new Date(req.requestTime || Date.now()).toISOString(),
+      endTime: new Date().toISOString(),
+      totalMs: Date.now() - (req.requestTime || Date.now())
     });
 
     res.json(response);
