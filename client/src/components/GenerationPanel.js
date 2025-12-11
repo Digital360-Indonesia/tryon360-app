@@ -11,7 +11,7 @@ const GenerationPanel = ({
   generationProgress 
 }) => {
   const [providers, setProviders] = useState([]);
-  const [selectedProvider, setSelectedProvider] = useState('flux_kontext');
+  const [selectedProvider, setSelectedProvider] = useState('gemini_2_5_flash_image');
   const [garmentDescription, setGarmentDescription] = useState('');
   const [embroideryDetails, setEmbroideryDetails] = useState({
     detail1: { position: 'chest_left', description: '' },
@@ -28,12 +28,10 @@ const GenerationPanel = ({
     try {
       setLoading(true);
       const response = await api.get('/generation/providers');
-      // Filter out chatgpt_image provider
-      const filteredProviders = response.data.providers.filter(p => p.id !== 'chatgpt_image');
-      setProviders(filteredProviders);
+      setProviders(response.data.providers);
 
-      // Set default provider to first active one from filtered providers
-      const activeProvider = filteredProviders.find(p => p.status === 'active');
+      // Set default provider to first active one
+      const activeProvider = response.data.providers.find(p => p.status === 'active');
       if (activeProvider) {
         setSelectedProvider(activeProvider.id);
       }
@@ -84,7 +82,6 @@ const GenerationPanel = ({
   const getProviderIcon = (providerId) => {
     switch (providerId) {
       case 'flux_kontext': return Zap;
-      case 'chatgpt_image': return Cpu;
       case 'gemini_flash': return Clock;
       case 'nano_banana': return Clock;
       default: return Cpu;
@@ -94,7 +91,6 @@ const GenerationPanel = ({
   const getProviderCost = (providerId) => {
     const costs = {
       flux_kontext: '$0.045',
-      chatgpt_image: '$0.080',
       gemini_flash: '$0.030',
       nano_banana: '$0.039'
     };

@@ -13,15 +13,9 @@ const UploadSlots = ({ uploads, onUploadChange, onRemoveUpload }) => {
 
   // Helper function to handle file selection
   const handleFileSelect = (slotType, files) => {
-    console.log(`File selected for ${slotType}:`, files);
-    if (files && files.length > 0) {
+        if (files && files.length > 0) {
       const file = files[0];
-      console.log('File details:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
-      });
-      onUploadChange(slotType, file);
+            onUploadChange(slotType, file);
     }
   };
 
@@ -37,21 +31,17 @@ const UploadSlots = ({ uploads, onUploadChange, onRemoveUpload }) => {
     noClick: false,
     noKeyboard: false,
     onDrop: (acceptedFiles, rejectedFiles) => {
-      console.log('Product dropzone - Accepted:', acceptedFiles, 'Rejected:', rejectedFiles);
-      handleFileSelect('product', acceptedFiles);
+            handleFileSelect('product', acceptedFiles);
       setDraggedOver(null);
     },
     onDragEnter: () => {
-      console.log('Product drag enter');
-      setDraggedOver('product');
+            setDraggedOver('product');
     },
     onDragLeave: () => {
-      console.log('Product drag leave');
-      setDraggedOver(null);
+            setDraggedOver(null);
     },
     onError: (err) => {
-      console.error('Product dropzone error:', err);
-    }
+          }
   });
 
   const detail1Dropzone = useDropzone({
@@ -63,8 +53,7 @@ const UploadSlots = ({ uploads, onUploadChange, onRemoveUpload }) => {
     maxFiles: 1,
     maxSize: 10 * 1024 * 1024,
     onDrop: (acceptedFiles, rejectedFiles) => {
-      console.log('Detail1 dropzone - Accepted:', acceptedFiles, 'Rejected:', rejectedFiles);
-      handleFileSelect('detail1', acceptedFiles);
+            handleFileSelect('detail1', acceptedFiles);
       setDraggedOver(null);
     },
     onDragEnter: () => setDraggedOver('detail1'),
@@ -80,8 +69,7 @@ const UploadSlots = ({ uploads, onUploadChange, onRemoveUpload }) => {
     maxFiles: 1,
     maxSize: 10 * 1024 * 1024,
     onDrop: (acceptedFiles, rejectedFiles) => {
-      console.log('Detail2 dropzone - Accepted:', acceptedFiles, 'Rejected:', rejectedFiles);
-      handleFileSelect('detail2', acceptedFiles);
+            handleFileSelect('detail2', acceptedFiles);
       setDraggedOver(null);
     },
     onDragEnter: () => setDraggedOver('detail2'),
@@ -97,8 +85,7 @@ const UploadSlots = ({ uploads, onUploadChange, onRemoveUpload }) => {
     maxFiles: 1,
     maxSize: 10 * 1024 * 1024,
     onDrop: (acceptedFiles, rejectedFiles) => {
-      console.log('Detail3 dropzone - Accepted:', acceptedFiles, 'Rejected:', rejectedFiles);
-      handleFileSelect('detail3', acceptedFiles);
+            handleFileSelect('detail3', acceptedFiles);
       setDraggedOver(null);
     },
     onDragEnter: () => setDraggedOver('detail3'),
@@ -159,8 +146,7 @@ const UploadSlots = ({ uploads, onUploadChange, onRemoveUpload }) => {
           type="file"
           accept="image/jpeg,image/jpg,image/png,image/webp"
           onChange={(e) => {
-            console.log(`File input changed for ${slotType}:`, e.target.files);
-            handleFileSelect(slotType, e.target.files);
+                        handleFileSelect(slotType, e.target.files);
           }}
           style={{ display: 'none' }}
         />
@@ -178,8 +164,7 @@ const UploadSlots = ({ uploads, onUploadChange, onRemoveUpload }) => {
           {...dropzone.getRootProps()}
           onClick={(e) => {
             e.preventDefault();
-            console.log(`Click on ${slotType} upload area`);
-            if (inputRef.current) {
+                        if (inputRef.current) {
               inputRef.current.click();
             }
           }}
@@ -203,8 +188,7 @@ const UploadSlots = ({ uploads, onUploadChange, onRemoveUpload }) => {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log(`Removing file from ${slotType}`);
-                  onRemoveUpload(slotType);
+                                    onRemoveUpload(slotType);
                 }}
                 className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
               >

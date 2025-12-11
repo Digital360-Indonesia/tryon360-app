@@ -14,12 +14,8 @@ class Database {
         useUnifiedTopology: true,
       });
 
-      console.log('✅ Connected to MongoDB');
-      console.log(`📊 Database: ${this.connection.connection.name}`);
-
       return this.connection;
     } catch (error) {
-      console.error('❌ MongoDB connection error:', error);
       process.exit(1);
     }
   }
@@ -27,7 +23,6 @@ class Database {
   async disconnect() {
     if (this.connection) {
       await mongoose.disconnect();
-      console.log('🔌 Disconnected from MongoDB');
     }
   }
 

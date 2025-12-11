@@ -23,8 +23,6 @@ class ImageComposer {
    */
   async combineImages(faceImage, productImage, detailImage) {
     try {
-      console.log('Starting image composition...');
-      
       // Process face image (top section) - CONTAIN to show full face without cropping
       const faceBuffer = await sharp(faceImage)
         .resize(this.targetWidth, this.faceHeight, {
@@ -33,8 +31,6 @@ class ImageComposer {
         })
         .toBuffer();
       
-      console.log(`Face section resized to ${this.targetWidth}x${this.faceHeight} (full face, no crop)`);
-      
       // Process product image (middle section)
       const productBuffer = await sharp(productImage)
         .resize(this.targetWidth, this.productHeight, {
@@ -42,8 +38,6 @@ class ImageComposer {
           background: { r: 255, g: 255, b: 255, alpha: 1 }
         })
         .toBuffer();
-      
-      console.log(`Product section resized to ${this.targetWidth}x${this.productHeight}`);
       
       // Process detail image (bottom section) - optional
       let detailBuffer = null;
@@ -54,8 +48,6 @@ class ImageComposer {
             background: { r: 255, g: 255, b: 255, alpha: 1 }
           })
           .toBuffer();
-        
-        console.log(`Detail section resized to ${this.targetWidth}x${this.detailHeight}`);
       } else {
         // Create white placeholder if no detail image
         detailBuffer = await sharp({
@@ -68,8 +60,6 @@ class ImageComposer {
         })
         .jpeg()
         .toBuffer();
-        
-        console.log('Created white placeholder for detail section');
       }
       
       // Combine all three sections vertically
@@ -89,12 +79,9 @@ class ImageComposer {
       .jpeg({ quality: 95 })
       .toBuffer();
       
-      console.log(`Composite image created: ${this.targetWidth}x${this.targetHeight} (9:16 ratio)`);
-      
       return composite;
       
     } catch (error) {
-      console.error('Image composition failed:', error);
       throw new Error(`Failed to compose images: ${error.message}`);
     }
   }
@@ -142,12 +129,10 @@ class ImageComposer {
     try {
       await sharp(compositeBuffer)
         .toFile(outputPath);
-      
-      console.log(`Composite saved to: ${outputPath}`);
+
       return outputPath;
       
     } catch (error) {
-      console.error('Failed to save composite:', error);
       throw error;
     }
   }

@@ -91,13 +91,10 @@ PROHIBITED:
     switch (providerId) {
       case 'flux_kontext':
         return baseMessage + '\n\nFLUX SPECIFIC: Use the reference image to guide garment details. Prioritize photorealism and anatomical accuracy.';
-      
-      case 'chatgpt_image':
-        return baseMessage + '\n\nDALL-E SPECIFIC: Focus on consistent model identity and professional photography aesthetics.';
-      
+
       case 'gemini_flash':
         return baseMessage + '\n\nGEMINI SPECIFIC: Emphasize natural lighting and authentic fabric representation.';
-      
+
       default:
         return baseMessage;
     }

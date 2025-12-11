@@ -12,7 +12,6 @@ Sebelum memulai deployment, pastikan Anda memiliki:
 - API Keys yang diperlukan:
   - Gemini API Key
   - Flux API Key
-  - OpenAI API Key (opsional)
 
 ## 🏗️ Struktur Proyek (Monolithic)
 
@@ -78,15 +77,14 @@ Hanya **4 script** yang tersedia:
 
 Edit file `.env`:
 ```env
-# Database Configuration
-MONGODB_URI=mongodb://localhost:27017/garment-tryon
-
-# AI Provider API Keys
+# API Keys
 GEMINI_API_KEY=your_gemini_api_key_here
 FLUX_API_KEY=your_flux_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here  # Opsional
 
-# Server Configuration
+# Database
+MONGODB_URI=mongodb://localhost:27017/garment-tryon
+
+# Server
 PORT=3000
 NODE_ENV=development
 ```
@@ -249,7 +247,14 @@ Aplikasi sudah memiliki endpoint health check:
 - `GET /health` - Menampilkan status server dan database
 - `GET /api/health` - Sama dengan /health
 
-### 3. MongoDB Setup
+### 3. AI Provider Configuration
+
+Aplikasi menggunakan **Gemini 2.5 Flash Image** sebagai primary provider dengan Flux Kontext sebagai fallback:
+- Primary: Gemini 2.5 Flash Image (Google)
+- Fallback: Flux Kontext (Black Forest Labs)
+- Tidak lagi menggunakan OpenAI/DALL-E
+
+### 4. MongoDB Setup
 
 #### Local MongoDB
 ```bash
@@ -329,14 +334,16 @@ npm run setup:dev  # atau setup:prod
 
 ## 📝 Checklist Production
 
-- [ ] Environment variables sudah dikonfigurasi
+- [ ] Environment variables sudah dikonfigurasi (GEMINI_API_KEY, FLUX_API_KEY, MONGODB_URI)
 - [ ] MongoDB connection sudah di-tes
-- [ ] API keys valid dan aktif
+- [ ] API keys valid dan aktif (Gemini & Flux)
 - [ ] Frontend sudah di-build (`npm run setup:prod`)
 - [ ] Firewall sudah dikonfigurasi
 - [ ] SSL/HTTPS sudah di-setup
 - [ ] Backup sudah dijadwalkan (database + files)
 - [ ] Monitoring sudah aktif
+- [ ] Hanya ada 2 folder penyimpanan: `/uploads` dan `/generated`
+- [ ] Tidak ada file cache lain yang tersimpan
 
 ## 🔄 Update Aplikasi
 

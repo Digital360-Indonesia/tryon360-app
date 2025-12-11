@@ -14,7 +14,6 @@ class AIService {
     // Initialize API keys from environment
     this.apiKeys = {
       flux_kontext: process.env.FLUX_API_KEY,
-      chatgpt_image: process.env.OPENAI_API_KEY,
       gemini_flash: process.env.GEMINI_API_KEY,
       nano_banana: process.env.GEMINI_API_KEY, // Uses same Gemini API key
       gemini_2_5_flash_image: process.env.GEMINI_API_KEY, // Uses same Gemini API key
@@ -53,7 +52,6 @@ class AIService {
     
     if (!fs.existsSync(generatedDir)) {
       fs.mkdirSync(generatedDir, { recursive: true });
-      console.log(`📁 Created generated directory: ${generatedDir}`);
     }
   }
 
@@ -100,10 +98,7 @@ class AIService {
           providerId
         );
       
-      case 'chatgpt_image':
-        return await this.generateWithChatGPT(prompt, request);
-      
-      case 'gemini_2_5_flash_image':
+            case 'gemini_2_5_flash_image':
       case 'nano_banana':
         return await this.retryWithBackoff(
           () => this.generateWithNanoBanana(prompt, uploadedImages, request),
@@ -154,9 +149,7 @@ class AIService {
     if (!modelPhotoPath) {
       throw new Error(`Model reference photo not found: Tried ${modelPhotoPathJpg} and ${modelPhotoPathPng}`);
     }
-    
-    console.log('Creating composite image for FLUX...');
-    
+
     // Get product image buffer
     let productBuffer = null;
     if (request.originalProductBuffer) {
@@ -186,14 +179,11 @@ class AIService {
     const timestamp = Date.now();
     const compositeDebugPath = path.join(this.getGeneratedDir(), `composite_debug_${timestamp}.jpg`);
     await composer.saveComposite(compositeBuffer, compositeDebugPath);
-    console.log(`🔍 COMPOSITE SAVED FOR REVIEW: ${compositeDebugPath}`);
     
     // Convert to base64 - Flux needs raw base64 without data URL prefix
     const compositeBase64WithPrefix = composer.bufferToBase64(compositeBuffer);
     // Remove the data URL prefix for Flux API
     const compositeBase64 = compositeBase64WithPrefix.replace(/^data:image\/\w+;base64,/, '');
-    console.log('Composite image created successfully');
-    console.log('Base64 format: raw (no data URL prefix)');
     
     // Build enhanced prompt for composite image
     const enhancedPrompt = this.buildCompositePrompt(request);
@@ -215,25 +205,6 @@ class AIService {
       seed: seed // Deterministic seed based on actual image + prompt content
     };
     
-    console.log('=== FLUX Kontext Pro Composite Request ===');
-    console.log('Endpoint:', this.providers.flux_kontext.endpoint);
-    console.log('Composite dimensions: 752x1392 (9:16)');
-    console.log('Sections: Face (top) | Product (middle) | Detail (bottom)');
-    console.log('Base64 length:', compositeBase64.length, 'characters');
-    console.log('Prompt length:', requestData.prompt.length);
-    console.log('Generation Parameters:', {
-      seed: requestData.seed,
-      guidance_scale: requestData.guidance_scale,
-      num_inference_steps: requestData.num_inference_steps,
-      strength: requestData.strength,
-      safety_tolerance: requestData.safety_tolerance,
-      aspect_ratio: requestData.aspect_ratio,
-      output_format: requestData.output_format
-    });
-    console.log('\n=== FULL PROMPT BEING SENT TO FLUX ===');
-    console.log(requestData.prompt);
-    console.log('=== END OF PROMPT ===\n');
-    
     // SAVE PROMPT TO FILE FOR REVIEW (use SAME timestamp as composite debug)
     const promptFilePath = path.join(this.getGeneratedDir(), `prompt_${timestamp}.txt`);
     fs.writeFileSync(promptFilePath, `Generation Timestamp: ${new Date().toISOString()}\n` +
@@ -242,7 +213,6 @@ class AIService {
                                      `Composite Image: composite_debug_${timestamp}.jpg\n` +
                                      `\n=== PROMPT SENT TO FLUX ===\n\n` +
                                      requestData.prompt);
-    console.log(`📝 PROMPT SAVED FOR REVIEW: ${promptFilePath}`);
     
     // Add session consistency to reduce server-switching issues
     const sessionId = `${request.modelId}_${Date.now()}`;
@@ -261,12 +231,9 @@ class AIService {
 
     try {
       const response = await axios(config);
-      console.log('Black Forest Labs API response:', response.data);
-      
+
       // FLUX Kontext Pro returns task ID and polling URL
       if (response.data.id && response.data.polling_url) {
-        console.log('Task ID:', response.data.id);
-        console.log('Polling URL:', response.data.polling_url);
         
         // Poll for completion using the provided polling_url
         const completedResponse = await this.pollFluxKontextGeneration(response.data.polling_url, apiKey);
@@ -293,70 +260,14 @@ class AIService {
         throw new Error('Invalid response from Black Forest Labs API');
       }
     } catch (error) {
-      console.error('Black Forest Labs API error:', error.response?.data || error.message);
-      
       // Check if it's a retryable error
       const isRetryable = this.isRetryableError(error);
-      if (isRetryable) {
-        console.log('Error is retryable, will be handled by retry logic');
-      }
-      
+
       throw new Error(`Flux generation failed: ${error.message}`);
     }
   }
 
-  /**
-   * Generate image using ChatGPT/DALL-E API
-   * @param {string} prompt - Generation prompt
-   * @param {Object} request - Original request
-   * @returns {Object} Generation result
-   */
-  async generateWithChatGPT(prompt, request) {
-    const apiKey = this.apiKeys.chatgpt_image;
-    if (!apiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
-
-    const config = {
-      method: 'post',
-      url: this.providers.chatgpt_image.endpoint,
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      data: {
-        model: 'dall-e-3',
-        prompt: prompt,
-        quality: 'hd',
-        size: '1024x1024',
-        response_format: 'url',
-        n: 1
-      },
-      timeout: this.settings.chatgpt_image.timeout
-    };
-
-    try {
-      const response = await axios(config);
-      const imageUrl = response.data.data[0].url;
-      
-      return {
-        success: true,
-        provider: 'chatgpt_image',
-        imageUrl: imageUrl,
-        imagePath: await this.downloadAndSaveImage(imageUrl),
-        prompt: prompt,
-        metadata: {
-          modelId: request.modelId,
-          pose: request.pose,
-          revisedPrompt: response.data.data[0].revised_prompt,
-          cost: this.calculateCost('chatgpt_image', 'hd')
-        }
-      };
-    } catch (error) {
-      throw new Error(`ChatGPT generation failed: ${error.message}`);
-    }
-  }
-
+  
   /**
    * Generate image using Nano Banana (Gemini 2.5 Flash Image Preview) API
    * @param {string} prompt - Generation prompt
@@ -388,9 +299,7 @@ class AIService {
     if (!modelPhotoPath) {
       throw new Error(`Model reference photo not found: Tried ${modelPhotoPathJpg} and ${modelPhotoPathPng}`);
     }
-    
-    console.log('Creating composite image for Nano Banana...');
-    
+
     // Get product image buffer
     let productBuffer = null;
     if (request.originalProductBuffer) {
@@ -420,8 +329,7 @@ class AIService {
     const timestamp = Date.now();
     const compositeDebugPath = path.join(this.getGeneratedDir(), `composite_nanobana_${timestamp}.jpg`);
     await composer.saveComposite(compositeBuffer, compositeDebugPath);
-    console.log(`🍌 NANO BANANA COMPOSITE SAVED: ${compositeDebugPath}`);
-    
+      
     // Convert to base64 without data URL prefix (Gemini expects raw base64)
     const compositeBase64 = compositeBuffer.toString('base64');
     
@@ -451,12 +359,6 @@ class AIService {
       safetySettings: this.settings.nano_banana?.parameters?.safety_settings || []
     };
     
-    console.log('=== NANO BANANA (Gemini 2.5 Flash Image) Request ===');
-    console.log('Endpoint:', this.providers.nano_banana.endpoint);
-    console.log('Composite dimensions: 752x1392 (9:16)');
-    console.log('Sections: Face (top) | Product (middle) | Detail (bottom)');
-    console.log('Prompt length:', enhancedPrompt.length);
-    
     // Save prompt to file for review
     const promptFilePath = path.join(this.getGeneratedDir(), `prompt_nanobana_${timestamp}.txt`);
     fs.writeFileSync(promptFilePath, `Generation Timestamp: ${new Date().toISOString()}\n` +
@@ -465,7 +367,6 @@ class AIService {
                                      `Composite Image: composite_nanobana_${timestamp}.jpg\n` +
                                      `\n=== PROMPT SENT TO NANO BANANA ===\n\n` +
                                      enhancedPrompt);
-    console.log(`🍌 NANO BANANA PROMPT SAVED: ${promptFilePath}`);
     
     const config = {
       method: 'post',
@@ -480,8 +381,6 @@ class AIService {
 
     try {
       const response = await axios(config);
-      console.log('Nano Banana API response received');
-      console.log('📋 FULL RESPONSE STRUCTURE:', JSON.stringify(response.data, null, 2));
       
       // Extract generated image from response
       if (response.data?.candidates?.[0]?.content?.parts) {
@@ -496,8 +395,6 @@ class AIService {
             const imageBuffer = Buffer.from(imageData, 'base64');
             const outputPath = path.join(this.getGeneratedDir(), `tryon_nanobana_${timestamp}.jpg`);
             fs.writeFileSync(outputPath, imageBuffer);
-            
-            console.log(`✅ Nano Banana generation successful: ${outputPath}`);
             
             return {
               success: true,
@@ -517,7 +414,6 @@ class AIService {
         // If we only got text responses, log them all
         const textParts = parts.filter(part => part.text).map(part => part.text);
         if (textParts.length > 0) {
-          console.error('Nano Banana returned only text, no image:', textParts.join('\n'));
           throw new Error(`Nano Banana did not generate an image. Response: ${textParts.join(' ')}`);
         }
       }
@@ -525,7 +421,6 @@ class AIService {
       throw new Error('Unexpected response format from Nano Banana API');
       
     } catch (error) {
-      console.error('Nano Banana generation error:', error.response?.data || error.message);
       
       // Handle specific Gemini API errors
       if (error.response?.status === 400) {
@@ -580,8 +475,7 @@ class AIService {
                                    `Provider: imagen_4_ultra\n\n` +
                                    `=== PROMPT SENT TO IMAGEN 4.0 ULTRA ===\n\n` +
                                    prompt);
-      console.log(`🖼️ IMAGEN 4.0 ULTRA PROMPT SAVED: ${promptFilePath}`);
-
+  
       const config = {
         method: 'post',
         url: this.providers.imagen_4_ultra.endpoint,
@@ -594,7 +488,6 @@ class AIService {
       };
 
       const response = await axios(config);
-      console.log('Imagen 4.0 Ultra API response received');
 
       // Extract generated image from response
       if (response.data?.candidates?.[0]?.content?.parts) {
@@ -614,7 +507,6 @@ class AIService {
 
             // Save composite image for reference
             fs.writeFileSync(imagePath, imageBuffer);
-            console.log(`🖼️ IMAGEN 4.0 ULTRA IMAGE SAVED: ${imagePath}`);
 
             // Calculate metadata
             const metadata = {
@@ -646,7 +538,6 @@ class AIService {
       throw new Error('No image generated in Imagen 4.0 Ultra response');
 
     } catch (error) {
-      console.error('Imagen 4.0 Ultra generation error:', error);
       throw new Error(`Imagen 4.0 Ultra generation failed: ${error.message}`);
     }
   }
@@ -691,7 +582,6 @@ class AIService {
   calculateCost(providerId, quality) {
     const costs = {
       flux_kontext: { hd: 0.045, standard: 0.025 },
-      chatgpt_image: { hd: 0.080, standard: 0.040 },
       gemini_flash: { hd: 0.030, standard: 0.015 }
     };
 
@@ -793,8 +683,6 @@ class AIService {
           }
         });
         
-        console.log(`Polling attempt ${attempts + 1}:`, response.data.status);
-        
         if (response.data.status === 'Ready') {
           // Immediately download the image (URLs expire in 10 minutes)
           await this.downloadImageImmediately(response.data.result.sample);
@@ -803,8 +691,6 @@ class AIService {
           throw new Error(`Generation failed: ${response.data.error || 'Unknown error'}`);
         } else if (response.data.status === 'Pending') {
           // Continue polling for Pending status
-        } else {
-          console.log('Unknown status:', response.data.status);
         }
         
         // Wait 2 seconds before next poll
@@ -814,7 +700,6 @@ class AIService {
       } catch (error) {
         if (error.response?.status === 429) {
           // Rate limited - wait longer
-          console.log('Rate limited, waiting 5 seconds...');
           await new Promise(resolve => setTimeout(resolve, 5000));
           attempts++;
           continue;
@@ -836,7 +721,6 @@ class AIService {
    * @param {string} imageUrl - Image URL from BFL API
    */
   async downloadImageImmediately(imageUrl) {
-    console.log('Downloading image immediately to avoid expiration:', imageUrl);
     // Note: downloadAndSaveImage method will handle this
   }
 
@@ -857,7 +741,6 @@ class AIService {
       
       return `data:${mimeType};base64,${base64Image}`;
     } catch (error) {
-      console.error('Error converting image to base64:', error);
       throw error;
     }
   }
@@ -1010,7 +893,6 @@ class AIService {
         
         // Calculate backoff delay (exponential: 2s, 4s, 8s...)
         const delay = Math.min(2000 * Math.pow(2, attempt), 30000); // Max 30s
-        console.log(`${operation} attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
         
         await new Promise(resolve => setTimeout(resolve, delay));
       }

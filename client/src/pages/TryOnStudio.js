@@ -35,8 +35,7 @@ const TryOnStudio = () => {
   const [success, setSuccess] = useState(null);
 
   const handleUploadChange = (slotType, file) => {
-    console.log('handleUploadChange called with:', slotType, file);
-    setUploads(prev => ({
+      setUploads(prev => ({
       ...prev,
       [slotType]: file
     }));
@@ -62,8 +61,7 @@ const TryOnStudio = () => {
       const poseInfo = response.data.poses.find(p => p.id === poseId);
       setSelectedPoseInfo(poseInfo);
     } catch (error) {
-      console.error('Error fetching pose info:', error);
-      setSelectedPoseInfo(null);
+            setSelectedPoseInfo(null);
     }
   };
 
@@ -119,8 +117,7 @@ const TryOnStudio = () => {
       }
 
     } catch (err) {
-      console.error('Generation error:', err);
-      setError(err.message || 'Failed to generate try-on image');
+            setError(err.message || 'Failed to generate try-on image');
 
       // Save failed log
       storageService.saveGenerationLog({

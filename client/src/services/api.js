@@ -15,8 +15,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Add any auth headers or logging here
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    return config;
+      return config;
   },
   (error) => {
     return Promise.reject(error);
@@ -26,12 +25,10 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
-    console.log(`API Response: ${response.status} ${response.config.url}`);
-    return response;
+        return response;
   },
   (error) => {
-    console.error('API Error:', error.response?.data || error.message);
-    
+        
     // Handle common errors
     if (error.response?.status === 413) {
       error.message = 'File too large. Please use a smaller image.';
@@ -169,8 +166,7 @@ export const pollJobStatus = async (jobId, onUpdate, maxAttempts = 60) => {
       return poll();
       
     } catch (error) {
-      console.error('Polling error:', error);
-      throw error;
+            throw error;
     }
   };
   

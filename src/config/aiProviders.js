@@ -20,25 +20,7 @@ const AI_PROVIDERS = {
     }
   },
 
-  chatgpt_image: {
-    id: 'chatgpt_image',
-    name: 'ChatGPT Image Generation',
-    description: 'OpenAI DALL-E powered generation',
-    status: 'active',
-    endpoint: 'https://api.openai.com/v1/images/generations',
-    supportsImageInput: true,
-    generationSettings: {
-      model: 'dall-e-3',
-      quality: 'hd',
-      size: '1024x1024',
-      style: 'natural'
-    },
-    rateLimit: {
-      requestsPerMinute: 5,
-      requestsPerHour: 50
-    }
-  },
-
+  
   gemini_flash: {
     id: 'gemini_flash',
     name: 'Gemini Flash 2.5',
@@ -141,15 +123,7 @@ const GENERATION_SETTINGS = {
     }
   },
   
-  chatgpt_image: {
-    timeout: 45000, // 45 seconds  
-    retries: 3,
-    parameters: {
-      response_format: 'url',
-      quality: 'hd'
-    }
-  },
-
+  
   gemini_flash: {
     timeout: 30000, // 30 seconds
     retries: 2,
@@ -197,8 +171,8 @@ const GENERATION_SETTINGS = {
 };
 
 const DEFAULT_GENERATION_CONFIG = {
-  defaultProvider: 'flux_kontext',
-  fallbackProvider: 'chatgpt_image', 
+  defaultProvider: 'gemini_2_5_flash_image',
+  fallbackProvider: 'flux_kontext',
   maxConcurrentGenerations: 3,
   imageOptimization: {
     outputFormat: 'jpeg',

@@ -45,9 +45,6 @@ router.post('/try-on', upload.fields([
   const jobId = uuidv4();
   
   try {
-    console.log('=== Generation Request Debug ===');
-    console.log('Request body:', req.body);
-    console.log('Request files:', req.files ? Object.keys(req.files) : 'No files');
     
     // Extract form data
     const {
@@ -104,7 +101,7 @@ router.post('/try-on', upload.fields([
           }
         );
       } catch (error) {
-        console.error('Progress update error:', error);
+        // Error updating progress
       }
     };
 
@@ -115,10 +112,7 @@ router.post('/try-on', upload.fields([
     const uploadedImages = [];
 
     // Process product image
-    console.log('Processing product image:', req.files.productImage[0].originalname, req.files.productImage[0].size, 'bytes');
-    console.log('Product image mimetype:', req.files.productImage[0].mimetype);
     const productResult = await imageProcessor.processUpload(req.files.productImage[0], 'product');
-    console.log('Product analysis result:', JSON.stringify(productResult.analysis, null, 2));
     processedFiles.product = productResult;
     uploadedImages.push(productResult.path);
 
@@ -220,7 +214,6 @@ router.post('/try-on', upload.fields([
     });
 
   } catch (error) {
-    console.error('Generation error:', error);
 
     // Update job status in MongoDB
     try {
@@ -228,7 +221,7 @@ router.post('/try-on', upload.fields([
         await generation.fail(error.message);
       }
     } catch (dbError) {
-      console.error('Database error updating job status:', dbError);
+      // Database error updating job status
     }
 
     res.status(500).json({
@@ -300,7 +293,6 @@ router.delete('/job/:jobId', async (req, res) => {
       message: 'Job cancelled successfully'
     });
   } catch (error) {
-    console.error('Cancel job error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -360,7 +352,6 @@ router.get('/status/:jobId', async (req, res) => {
       updatedAt: generation.updatedAt
     });
   } catch (error) {
-    console.error('Status check error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -402,7 +393,6 @@ router.get('/history', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('History fetch error:', error);
     res.status(500).json({
       success: false,
       error: error.message

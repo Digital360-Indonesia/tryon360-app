@@ -10,8 +10,7 @@ const SimpleUpload = ({ uploads, onUploadChange, onRemoveUpload, selectedPoseInf
   const handleFileChange = (slotType, event) => {
     const file = event.target.files[0];
     if (file) {
-      console.log('File selected:', slotType, file);
-      onUploadChange(slotType, file);
+            onUploadChange(slotType, file);
     }
   };
 

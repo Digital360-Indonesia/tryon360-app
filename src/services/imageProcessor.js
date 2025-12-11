@@ -111,7 +111,6 @@ class ImageProcessor {
       return analysis;
 
     } catch (error) {
-      console.error('Image analysis failed:', error);
       return {
         type: type,
         error: 'Analysis failed',
@@ -248,13 +247,13 @@ class ImageProcessor {
   async cleanupOldFiles(maxAgeHours = 24) {
     const uploadsDir = path.join(__dirname, '../../uploads');
     const generatedDir = path.join(__dirname, '../../generated');
-    
+
     const maxAge = maxAgeHours * 60 * 60 * 1000; // Convert to milliseconds
     const now = Date.now();
 
     const cleanDirectory = async (dirPath) => {
       if (!fs.existsSync(dirPath)) return;
-      
+
       const files = fs.readdirSync(dirPath);
       let cleaned = 0;
 

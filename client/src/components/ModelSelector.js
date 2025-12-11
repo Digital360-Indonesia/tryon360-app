@@ -27,8 +27,7 @@ const ModelSelector = ({ selectedModel, onModelSelect, selectedPose, onPoseSelec
       setError(null);
     } catch (err) {
       setError('Failed to load models');
-      console.error('Error loading models:', err);
-    } finally {
+          } finally {
       setLoading(false);
     }
   };
@@ -38,8 +37,7 @@ const ModelSelector = ({ selectedModel, onModelSelect, selectedPose, onPoseSelec
       const response = await api.get(`/models/${modelId}/poses`);
       setPoses(response.data.poses);
     } catch (err) {
-      console.error('Error loading poses:', err);
-      setPoses([]);
+            setPoses([]);
     }
   };
 
@@ -110,8 +108,7 @@ const ModelSelector = ({ selectedModel, onModelSelect, selectedPose, onPoseSelec
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     // Fallback to placeholder if image fails to load
-                    console.log('Failed to load model image:', model.avatar);
-                    e.target.style.display = 'none';
+                                        e.target.style.display = 'none';
                     e.target.nextSibling.style.display = 'flex';
                   }}
                 />
