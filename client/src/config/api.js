@@ -28,7 +28,11 @@ const API_CONFIG = {
     }
 
     // Default fallback
-      return 'http://localhost:5005';
+    if (isDevelopment) {
+      return `http://localhost:${process.env.PORT || '9901'}`;
+    }
+    // For production domains, use HTTPS with current host
+    return `https://${hostname}`;
   },
 
   // Get API base URL

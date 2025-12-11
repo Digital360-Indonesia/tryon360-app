@@ -1,5 +1,7 @@
 const express = require('express');
 const { PROFESSIONAL_MODELS, POSES, GARMENT_TYPES } = require('../config/models');
+const AIService = require('../services/aiService');
+const aiService = new AIService();
 
 const router = express.Router();
 
