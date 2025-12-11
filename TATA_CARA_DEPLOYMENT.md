@@ -65,6 +65,8 @@ Aplikasi akan berjalan di `http://localhost:3000`
 
 ### 📋 Penjelasan Script
 
+Hanya **4 script** yang tersedia:
+
 - **`npm run setup:dev`** - Install semua dependencies + build (development)
 - **`npm run setup:prod`** - Install production dependencies + build (production)
 - **`npm start`** - Jalankan server di production mode
@@ -309,7 +311,7 @@ Jika mengalami masalah:
 
 ## 🎉 Summary
 
-Deployment hanya butuh 4 command:
+Deployment hanya butuh **4 command**:
 
 ```bash
 git clone <repo-url>
@@ -317,5 +319,11 @@ cd garment-tryon-app
 cp .env.example .env && nano .env
 npm run setup:prod && npm start
 ```
+
+Hanya **4 script npm** yang perlu diingat:
+- `npm run setup:dev` - Setup development
+- `npm run setup:prod` - Setup production
+- `npm start` - Run production
+- `npm run dev` - Run development
 
 Simple dan cepat! 🚀
