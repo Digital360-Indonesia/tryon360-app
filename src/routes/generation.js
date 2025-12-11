@@ -120,19 +120,56 @@ router.post('/try-on', upload.fields([
     });
 
     console.log('💾 Saving to MongoDB...');
-    await generation.save();
-    console.log('✅ MongoDB save successful');
+    console.log('📋 Generation object to save:', {
+      jobId: generation.jobId,
+      modelId: generation.modelId,
+      pose: generation.pose,
+      provider: generation.provider,
+      status: generation.status,
+      progress: generation.progress,
+      userIp: generation.userIp
+    });
+
+    try {
+      await generation.save();
+      console.log('✅ MongoDB save successful:', {
+        jobId: generation.jobId,
+        _id: generation._id,
+        createdAt: generation.createdAt
+      });
+    } catch (mongoError) {
+      console.error('💥 MongoDB save failed:', {
+        error: mongoError.message,
+        stack: mongoError.stack,
+        name: mongoError.name,
+        code: mongoError.code,
+        jobId
+      });
+      throw mongoError;
+    }
 
     // Update progress
     const updateProgress = async (stage, progress) => {
       try {
         console.log(`📊 Progress: ${stage} (${progress}%)`);
-        await Generation.updateOne(
+        console.log('🔄 Updating MongoDB progress...');
+        const result = await Generation.updateOne(
           { jobId },
           { progress }
         );
+        console.log('✅ Progress updated:', {
+          matchedCount: result.matchedCount,
+          modifiedCount: result.modifiedCount,
+          jobId
+        });
       } catch (error) {
-        console.error('❌ Progress update failed:', error);
+        console.error('❌ Progress update failed:', {
+          error: error.message,
+          stack: error.stack,
+          jobId,
+          stage,
+          progress
+        });
       }
     };
 
@@ -240,7 +277,7 @@ router.post('/try-on', upload.fields([
     console.log('💾 Updating job status...');
 
     // Update job status in MongoDB
-    await generation.complete({
+    const completeData = {
       imageUrl: `/generated/${path.basename(generationResult.imagePath)}`,
       imagePath: generationResult.imagePath,
       prompt: generationResult.prompt,
@@ -250,7 +287,34 @@ router.post('/try-on', upload.fields([
         filename: processedFiles[key].filename,
         analysis: processedFiles[key].analysis
       }))
+    };
+
+    console.log('📋 Completion data to save:', {
+      jobId,
+      imageUrl: completeData.imageUrl,
+      imagePath: completeData.imagePath,
+      hasPrompt: !!completeData.prompt,
+      metadataKeys: completeData.metadata ? Object.keys(completeData.metadata) : 'none',
+      processedFilesCount: completeData.processedFiles.length
     });
+
+    try {
+      await generation.complete(completeData);
+      console.log('✅ Job completion saved successfully:', {
+        jobId,
+        status: generation.status,
+        imageUrl: generation.imageUrl,
+        completedAt: generation.updatedAt
+      });
+    } catch (completeError) {
+      console.error('💥 Job completion failed:', {
+        error: completeError.message,
+        stack: completeError.stack,
+        jobId,
+        status: generation.status
+      });
+      throw completeError;
+    }
 
     updateProgress('Complete', 100);
     console.log('🎉 Generation completed successfully!');
@@ -299,11 +363,38 @@ router.post('/try-on', upload.fields([
     try {
       if (generation) {
         console.log('💾 Marking job as failed...');
-        await generation.fail(error.message);
-        console.log('✅ Job marked as failed');
+        console.log('📋 Fail data:', {
+          jobId,
+          errorMessage: error.message,
+          currentStatus: generation.status
+        });
+
+        try {
+          await generation.fail(error.message);
+          console.log('✅ Job marked as failed successfully:', {
+            jobId,
+            status: generation.status,
+            error: generation.error,
+            failedAt: generation.updatedAt
+          });
+        } catch (failError) {
+          console.error('💥 Job fail operation failed:', {
+            error: failError.message,
+            stack: failError.stack,
+            jobId,
+            originalError: error.message
+          });
+        }
+      } else {
+        console.log('⚠️ No generation object to mark as failed');
       }
     } catch (dbError) {
-      console.error('❌ Database error updating job status:', dbError);
+      console.error('💥 Database error updating job status:', {
+        error: dbError.message,
+        stack: dbError.stack,
+        jobId,
+        originalError: error.message
+      });
     }
 
     const response = {
