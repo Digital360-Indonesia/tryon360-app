@@ -45,6 +45,7 @@ router.post('/try-on', upload.fields([
   const jobId = uuidv4();
   req.requestTime = Date.now(); // Track start time
   let generationResult = null; // Declare generationResult variable outside try blocks
+  let generation = null; // Declare generation variable outside try blocks
 
   console.log('🚀 === GENERATION REQUEST STARTED ===');
   console.log('🆔 Job ID:', jobId);
@@ -111,7 +112,7 @@ router.post('/try-on', upload.fields([
     console.log('✅ Validation passed, initializing services...');
 
     // Initialize job tracking in MongoDB
-    const generation = new Generation({
+    generation = new Generation({
       jobId,
       modelId,
       pose,

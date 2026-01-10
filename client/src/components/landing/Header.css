@@ -1,0 +1,249 @@
+/* ============================================
+   Header Navigation Styles
+   ============================================ */
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.nav-container {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Logo */
+.nav-logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.nav-logo:hover {
+  opacity: 0.8;
+}
+
+.logo-img {
+  height: 48px;
+  width: auto;
+}
+
+/* Mobile Menu Toggle */
+.mobile-menu-toggle {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 10;
+}
+
+.mobile-menu-toggle .hamburger {
+  width: 100%;
+  height: 2px;
+  background-color: #1f2937;
+  border-radius: 2px;
+  transition: all 0.2s ease-in-out;
+}
+
+.mobile-menu-toggle:hover .hamburger {
+  background-color: #dc2626;
+}
+
+.mobile-menu-toggle[aria-expanded="true"] .hamburger:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.mobile-menu-toggle[aria-expanded="true"] .hamburger:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-menu-toggle[aria-expanded="true"] .hamburger:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -7px);
+}
+
+/* Navigation Menu */
+.nav-menu {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-menu.open {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.nav-item {
+  position: relative;
+}
+
+.nav-link {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1f2937;
+  text-decoration: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease-in-out;
+  display: inline-block;
+}
+
+/* Pricing Button */
+.nav-link-pricing {
+  color: #1f2937;
+}
+
+.nav-link-pricing:hover {
+  color: #dc2626;
+}
+
+/* Try On Button - Solid Red Style */
+.nav-link-tryon {
+  background-color: #dc2626;
+  color: #ffffff !important;
+  border: 2px solid #dc2626;
+}
+
+.nav-link-tryon:hover {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+/* Language Switcher */
+.lang-switcher {
+  position: relative;
+}
+
+.lang-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.lang-btn:hover {
+  border-color: #1f2937;
+  background-color: #f3f4f6;
+}
+
+.lang-btn[aria-expanded="true"] .lang-arrow {
+  transform: rotate(180deg);
+}
+
+.lang-arrow {
+  transition: transform 0.2s ease-in-out;
+}
+
+.lang-current {
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.lang-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 140px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s ease-in-out;
+  z-index: 100;
+}
+
+.lang-dropdown.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.lang-option {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+  background: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease-in-out;
+}
+
+.lang-option:hover {
+  background-color: #f3f4f6;
+}
+
+.lang-option.active {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+/* Responsive Breakpoints */
+@media (min-width: 768px) {
+  .mobile-menu-toggle {
+    display: none;
+  }
+
+  .nav-menu {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .nav-menu.open {
+    position: static;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .logo-img {
+    height: 56px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .nav-container {
+    padding: 1rem 2rem;
+  }
+}

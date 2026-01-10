@@ -1,0 +1,35 @@
+/* ============================================
+   Landing Page Global Styles
+   ============================================ */
+.landing-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#main-content {
+  flex: 1;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Section spacing */
+section {
+  scroll-snap-align: start;
+}
+
+/* Mobile optimization - disable scroll snap */
+@media (max-width: 767px) {
+  html {
+    scroll-snap-type: none;
+  }
+
+  #main-content > section {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+}

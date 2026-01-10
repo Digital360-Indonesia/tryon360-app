@@ -1,0 +1,215 @@
+/* FAQs Section Container - Viewport Fit */
+.faqs-section {
+  background-color: var(--neutral);
+  padding: var(--spacing-20) var(--spacing-6);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.faqs-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Section Header */
+.faqs-header {
+  text-align: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.faqs-subtitle {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-bottom: var(--spacing-1);
+}
+
+.faqs-title {
+  font-size: 2.25rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--gray-900);
+  margin-bottom: 0;
+}
+
+/* FAQ Chat Container */
+.faqs-chat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+/* FAQ Item */
+.faq-item {
+  padding: var(--spacing-3) 0;
+  transition: none;
+}
+
+/* 3 Column Grid Layout */
+.faq-question-btn,
+.faq-answer-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: var(--spacing-4);
+  align-items: start;
+}
+
+.faq-answer-bubble {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+}
+
+.faq-grid-left,
+.faq-grid-center,
+.faq-grid-right {
+  min-height: 1px;
+}
+
+/* FAQ Question Button */
+.faq-question-btn {
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.faq-question-btn:focus {
+  outline: none;
+}
+
+.faq-question-btn:focus .faq-question-bubble {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* FAQ Toggle Icon (+/−) - Hidden but accessible */
+.faq-toggle-icon {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+}
+
+/* FAQ Question Bubble - Navy/Secondary, Right Aligned in Center Column */
+.faq-question-bubble {
+  display: block;
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--secondary);
+  color: var(--neutral);
+  font-size: 1.125rem;
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-2xl) var(--radius-lg) var(--radius-lg) var(--radius-2xl);
+  transition: filter var(--transition-base) var(--transition-timing);
+  text-align: left;
+}
+
+.faq-question-btn:hover .faq-question-bubble {
+  filter: brightness(1.1);
+}
+
+/* FAQ Answer Wrapper */
+.faq-answer-wrapper {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--transition-slow) var(--transition-timing),
+              opacity var(--transition-base) var(--transition-timing);
+  opacity: 0;
+  padding-left: 0;
+  margin-top: 0;
+}
+
+.faq-answer-wrapper.open {
+  max-height: 300px;
+  opacity: 1;
+  margin-top: var(--spacing-1_5);
+}
+
+/* FAQ Answer Logo - Digital360 Icon */
+.faq-answer-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  overflow: hidden;
+}
+
+.faq-answer-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* FAQ Answer Content - Grey Bubble */
+.faq-answer-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: linear-gradient(135deg, #8E9AAF 0%, #6B7B8C 100%);
+  color: var(--neutral);
+  border-radius: var(--radius-lg) var(--radius-2xl) var(--radius-2xl) var(--radius-lg);
+}
+
+/* FAQ Answer Icon (inside bubble) */
+.faq-answer-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-full);
+  color: var(--neutral);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* FAQ Answer Text */
+.faq-answer-text {
+  font-size: 1.125rem;
+  line-height: var(--line-height-normal);
+  color: var(--neutral);
+}
+
+/* Responsive Styles */
+@media (min-width: 640px) {
+  .faqs-title {
+    font-size: 3rem;
+  }
+
+  .faqs-header {
+    margin-bottom: var(--spacing-8);
+  }
+
+  .faqs-chat {
+    gap: var(--spacing-2);
+  }
+
+  .faq-item {
+    padding: var(--spacing-4) 0;
+  }
+
+  .faq-question-bubble {
+    padding: var(--spacing-2) var(--spacing-4);
+    font-size: 1.125rem;
+  }
+
+  .faq-answer-content {
+    padding: var(--spacing-2_5) var(--spacing-4);
+  }
+
+  .faq-answer-text {
+    font-size: 1.125rem;
+  }
+}
