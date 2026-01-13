@@ -50,3 +50,4 @@ old-unused-files-20250910/
 .claude/
 .kiro/
 master-modelfaces.psd
+*.sql

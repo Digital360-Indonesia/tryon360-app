@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { History, Trash2, Download, Calendar, DollarSign, BarChart3, Filter, Search, RefreshCw, ArrowLeft } from 'lucide-react';
+import { History, Trash2, Download, Calendar, DollarSign, BarChart3, Filter, Search, RefreshCw, ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import apiMethods from '../services/api';
 
 const GenerationLogs = () => {
@@ -8,6 +8,9 @@ const GenerationLogs = () => {
   const [filterProvider, setFilterProvider] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [limit] = useState(50);
 
   // Pricing per generation
   const PRICING = {
@@ -15,10 +18,10 @@ const GenerationLogs = () => {
     'nano_banana': 0.136 // Gemini 3 Pro Image (Nano Banana)
   };
 
-  // Load logs on mount
+  // Load logs on mount and when page changes
   useEffect(() => {
     loadLogs();
-  }, []);
+  }, [currentPage]);
 
   const loadLogs = async () => {
     try {
@@ -26,7 +29,7 @@ const GenerationLogs = () => {
       setError(null);
       console.log('🔄 Loading logs from API...');
 
-      const response = await apiMethods.get('/generation/logs?limit=100');
+      const response = await apiMethods.get(`/generation/logs?limit=${limit}&page=${currentPage}`);
 
       console.log('📦 Full API Response:', response);
       console.log('📦 Response.data:', response.data);
@@ -36,6 +39,7 @@ const GenerationLogs = () => {
       // Axios wraps the response in response.data
       if (response.data && response.data.success) {
         setLogs(response.data.data || []);
+        setTotalRecords(response.data.pagination?.total || 0);
         console.log('✅ Logs loaded successfully, total:', response.data.data?.length);
       } else {
         console.error('❌ API returned success=false or invalid response');
@@ -57,6 +61,8 @@ const GenerationLogs = () => {
       try {
         await apiMethods.delete('/generation/logs');
         setLogs([]);
+        setTotalRecords(0);
+        setCurrentPage(1);
       } catch (err) {
         console.error('Error clearing logs:', err);
         alert('Failed to clear logs');
@@ -64,6 +70,7 @@ const GenerationLogs = () => {
     }
   };
 
+  // Client-side filtering for current page
   const filteredLogs = logs.filter(log => {
     const matchesSearch = log.modelId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          log.pose?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -74,11 +81,22 @@ const GenerationLogs = () => {
     return matchesSearch && matchesProvider;
   });
 
-  // Calculate totals
-  const totalGenerations = filteredLogs.length;
-  const totalCost = filteredLogs.reduce((sum, log) => {
+  // Calculate totals based on total records from API
+  const totalGenerations = totalRecords;
+  const totalCost = logs.reduce((sum, log) => {
     return sum + (PRICING[log.provider] || 0);
   }, 0);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalRecords / limit);
+
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // Format currency - Indonesian format with comma decimal separator
   const formatCost = (cost) => {
@@ -223,78 +241,130 @@ const GenerationLogs = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-2">Loading logs...</h3>
             </div>
           ) : filteredLogs.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date & Time
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Model
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Pose
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Provider
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Cost
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(log.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {log.modelId || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {log.pose?.replace('_', ' ') || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {getProviderName(log.provider)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                        {formatCost(PRICING[log.provider] || 0)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          log.status === 'completed'
-                            ? 'bg-green-100 text-green-800'
-                            : log.status === 'failed'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {log.status === 'completed' ? 'Success' : log.status === 'failed' ? 'Failed' : 'Processing'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {log.imageUrl && (
-                          <button
-                            onClick={() => window.open(log.imageUrl, '_blank')}
-                            className="text-blue-600 hover:text-blue-800 mr-3"
-                            title="View Image"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                        )}
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date & Time
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Model
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Pose
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Provider
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cost
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatDate(log.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {log.modelId || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {log.pose?.replace('_', ' ') || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {getProviderName(log.provider)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                          {formatCost(PRICING[log.provider] || 0)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            log.status === 'completed'
+                              ? 'bg-green-100 text-green-800'
+                              : log.status === 'failed'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {log.status === 'completed' ? 'Success' : log.status === 'failed' ? 'Failed' : 'Processing'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {log.imageUrl && (
+                            <button
+                              onClick={() => window.open(log.imageUrl, '_blank')}
+                              className="text-blue-600 hover:text-blue-800 mr-3"
+                              title="View Image"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Showing {(currentPage - 1) * limit + 1} to {Math.min(currentPage * limit, totalRecords)} of {totalRecords} results
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handlePageChange(1)}
+                        disabled={currentPage === 1}
+                        className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="First Page"
+                      >
+                        <ChevronsLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Previous Page"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+
+                      <span className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg">
+                        Page {currentPage} of {totalPages}
+                      </span>
+
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Next Page"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handlePageChange(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Last Page"
+                      >
+                        <ChevronsRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="px-6 py-12 text-center">
               <History className="w-12 h-12 text-gray-400 mx-auto mb-4" />
