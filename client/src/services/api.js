@@ -86,6 +86,18 @@ export const apiMethods = {
     return response.data;
   },
 
+  async getLogs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `/generation/logs?${queryString}` : '/generation/logs';
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  async clearLogs() {
+    const response = await api.delete('/generation/logs');
+    return response.data;
+  },
+
   // Utility operations
   async cleanupFiles(maxAgeHours = 24) {
     const response = await api.post('/generation/cleanup', { maxAgeHours });
@@ -97,6 +109,17 @@ export const apiMethods = {
     const response = await api.get('/health', {
       baseURL: API_BASE_URL.replace('/api', '') // Remove /api for health check
     });
+    return response.data;
+  },
+
+  // Generic GET/DELETE methods for any API endpoint
+  async get(endpoint) {
+    const response = await api.get(endpoint);
+    return response.data;
+  },
+
+  async delete(endpoint) {
+    const response = await api.delete(endpoint);
     return response.data;
   }
 };

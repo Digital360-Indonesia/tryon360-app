@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { History, Trash2, Download, Calendar, DollarSign, BarChart3, Filter, Search } from 'lucide-react';
-import storageService from '../services/storage';
+import { History, Trash2, Download, Calendar, DollarSign, BarChart3, Filter, Search, RefreshCw, ArrowLeft } from 'lucide-react';
+import apiMethods from '../services/api';
 
 const GenerationLogs = () => {
   const [logs, setLogs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProvider, setFilterProvider] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Pricing per generation
   const PRICING = {
-    'flux_kontext': 0.039,
     'gemini_2_5_flash_image': 0.039, // Gemini 2.5 Flash Image
-    'nano_banana': 0.136, // Gemini 3 Pro Image
-    'imagen_4_ultra': 0.06 // Imagen 4.0 Ultra
+    'nano_banana': 0.136 // Gemini 3 Pro Image (Nano Banana)
   };
 
   // Load logs on mount
@@ -20,24 +20,56 @@ const GenerationLogs = () => {
     loadLogs();
   }, []);
 
-  const loadLogs = () => {
-    const savedLogs = storageService.getGenerationLogs();
-    setLogs(savedLogs);
+  const loadLogs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('🔄 Loading logs from API...');
+
+      const response = await apiMethods.get('/generation/logs?limit=100');
+
+      console.log('📦 Full API Response:', response);
+      console.log('📦 Response.data:', response.data);
+      console.log('✅ Response.data.success:', response.data?.success);
+      console.log('📊 Response.data.data length:', response.data?.data?.length);
+
+      // Axios wraps the response in response.data
+      if (response.data && response.data.success) {
+        setLogs(response.data.data || []);
+        console.log('✅ Logs loaded successfully, total:', response.data.data?.length);
+      } else {
+        console.error('❌ API returned success=false or invalid response');
+        setError('Failed to load logs');
+      }
+    } catch (err) {
+      console.error('❌ Error loading logs:', err);
+      console.error('❌ Error message:', err.message);
+      console.error('❌ Error stack:', err.stack);
+      setError('Error loading logs: ' + err.message);
+    } finally {
+      setLoading(false);
+      console.log('🏁 Loading finished');
+    }
   };
 
-  const clearAllLogs = () => {
+  const clearAllLogs = async () => {
     if (window.confirm('Are you sure you want to clear all generation logs? This cannot be undone.')) {
-      storageService.clearGenerationLogs();
-      setLogs([]);
+      try {
+        await apiMethods.delete('/generation/logs');
+        setLogs([]);
+      } catch (err) {
+        console.error('Error clearing logs:', err);
+        alert('Failed to clear logs');
+      }
     }
   };
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = log.modelId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          log.pose?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         log.providerId?.toLowerCase().includes(searchTerm.toLowerCase());
+                         log.provider?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesProvider = filterProvider === 'all' || log.providerId === filterProvider;
+    const matchesProvider = filterProvider === 'all' || log.provider === filterProvider;
 
     return matchesSearch && matchesProvider;
   });
@@ -45,12 +77,12 @@ const GenerationLogs = () => {
   // Calculate totals
   const totalGenerations = filteredLogs.length;
   const totalCost = filteredLogs.reduce((sum, log) => {
-    return sum + (PRICING[log.providerId] || 0);
+    return sum + (PRICING[log.provider] || 0);
   }, 0);
 
-  // Format currency
+  // Format currency - Indonesian format with comma decimal separator
   const formatCost = (cost) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 3,
@@ -64,14 +96,12 @@ const GenerationLogs = () => {
   };
 
   // Get provider display name
-  const getProviderName = (providerId) => {
+  const getProviderName = (provider) => {
     const names = {
-      'flux_kontext': 'Flux Kontext',
       'gemini_2_5_flash_image': 'Gemini 2.5 Flash Image',
-      'nano_banana': 'Nano Banana Gemini 3 Pro',
-      'imagen_4_ultra': 'Imagen 4.0 Ultra'
+      'nano_banana': 'Nano Banana Gemini 3 Pro'
     };
-    return names[providerId] || providerId;
+    return names[provider] || provider;
   };
 
   return (
@@ -84,19 +114,42 @@ const GenerationLogs = () => {
               <History className="w-6 h-6 text-blue-600" />
               <h1 className="text-2xl font-bold text-gray-900">Generation Logs</h1>
             </div>
-            <button
-              onClick={clearAllLogs}
-              className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Clear All</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => window.location.href = '/app'}
+                className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to App</span>
+              </button>
+              <button
+                onClick={loadLogs}
+                disabled={loading}
+                className="flex items-center space-x-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+              <button
+                onClick={clearAllLogs}
+                className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Clear All</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Stats Cards */}
       <div className="max-w-7xl mx-auto px-6 py-6">
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -155,10 +208,8 @@ const GenerationLogs = () => {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Providers</option>
-                <option value="flux_kontext">Flux Kontext</option>
-                <option value="gemini_2_5_flash_image">Gemini 2.5 Flash Image</option>
-                <option value="nano_banana">Nano Banana Gemini 3 Pro</option>
-                <option value="imagen_4_ultra">Imagen 4.0 Ultra</option>
+              <option value="gemini_2_5_flash_image">Gemini 2.5 Flash Image</option>
+              <option value="nano_banana">Nano Banana Gemini 3 Pro</option>
               </select>
             </div>
           </div>
@@ -166,7 +217,12 @@ const GenerationLogs = () => {
 
         {/* Logs Table */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          {filteredLogs.length > 0 ? (
+          {loading ? (
+            <div className="px-6 py-12 text-center">
+              <RefreshCw className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Loading logs...</h3>
+            </div>
+          ) : filteredLogs.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
@@ -195,10 +251,10 @@ const GenerationLogs = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredLogs.map((log, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
+                  {filteredLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(log.timestamp)}
+                        {formatDate(log.createdAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {log.modelId || 'N/A'}
@@ -207,18 +263,20 @@ const GenerationLogs = () => {
                         {log.pose?.replace('_', ' ') || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {getProviderName(log.providerId)}
+                        {getProviderName(log.provider)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                        {formatCost(PRICING[log.providerId] || 0)}
+                        {formatCost(PRICING[log.provider] || 0)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          log.success
+                          log.status === 'completed'
                             ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                            : log.status === 'failed'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {log.success ? 'Success' : 'Failed'}
+                          {log.status === 'completed' ? 'Success' : log.status === 'failed' ? 'Failed' : 'Processing'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

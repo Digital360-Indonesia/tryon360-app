@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, RefreshCw, History, Trash2, BarChart3 } from 'lucide-react';
+import { Download, RefreshCw, History, Trash2, BarChart3, Home } from 'lucide-react';
 import ModelSelector from '../components/ModelSelector';
 import SimpleUpload from '../components/SimpleUpload';
 import GenerationPanel from '../components/GenerationPanel';
@@ -8,31 +8,77 @@ import storageService from '../services/storage';
 import API_CONFIG from '../config/api';
 
 const TryOnStudio = () => {
-  // Load saved history on mount
-  useEffect(() => {
-    const savedHistory = storageService.getGenerationHistory();
-    if (savedHistory.length > 0) {
-      setGenerationResults(savedHistory);
-    }
-  }, []);
   // Core state
   const [selectedModel, setSelectedModel] = useState(null);
   const [selectedPose, setSelectedPose] = useState(null);
   const [selectedPoseInfo, setSelectedPoseInfo] = useState(null);
   const [uploads, setUploads] = useState({});
-  
+
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState({});
-  
+
   // Results state
   const [generationResults, setGenerationResults] = useState([]);
   const [currentResult, setCurrentResult] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
-  
+
   // UI state
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+
+  // Load history from database on mount
+  useEffect(() => {
+    loadHistoryFromDatabase();
+  }, []);
+
+  const loadHistoryFromDatabase = async () => {
+    try {
+      console.log('🔄 Loading history from database...');
+      const response = await apiMethods.get('/generation/logs?limit=10&status=completed');
+
+      console.log('📦 API Response:', response);
+      console.log('✅ Response.data:', response.data);
+
+      if (response && response.success) {
+        const completedGenerations = response.data || [];
+        console.log('📊 Completed generations:', completedGenerations.length);
+
+        // Transform database records to match the expected format
+        const transformedResults = completedGenerations.map(gen => ({
+          id: gen.id,
+          jobId: gen.jobId,
+          imageUrl: gen.imageUrl,
+          imagePath: gen.imagePath,
+          modelInfo: gen.modelId,
+          poseInfo: gen.pose,
+          provider: gen.provider,
+          createdAt: gen.createdAt,
+          prompt: gen.prompt
+        }));
+
+        console.log('✅ Transformed results:', transformedResults.length);
+        setGenerationResults(transformedResults);
+      } else {
+        console.warn('⚠️ Response success is false or no data');
+      }
+    } catch (err) {
+      console.error('❌ Failed to load history from database:', err);
+      // Fallback to localStorage if database fails
+      const savedHistory = storageService.getGenerationHistory();
+      if (savedHistory.length > 0) {
+        console.log('📦 Using localStorage fallback:', savedHistory.length);
+        setGenerationResults(savedHistory);
+      }
+    }
+  };
+
+  // Refresh history when showing history panel
+  useEffect(() => {
+    if (showHistory) {
+      loadHistoryFromDatabase();
+    }
+  }, [showHistory]);
 
   const handleUploadChange = (slotType, file) => {
       setUploads(prev => ({
@@ -169,6 +215,13 @@ const TryOnStudio = () => {
           
           <div className="flex items-center space-x-3">
             <button
+              onClick={() => window.location.href = '/'}
+              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Home"
+            >
+              <Home className="w-5 h-5" />
+            </button>
+            <button
               onClick={() => window.location.href = '/logs'}
               className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               title="Generation Logs"
@@ -288,7 +341,7 @@ const TryOnStudio = () => {
             )}
 
             {/* Results History */}
-            {generationResults.length > 1 && (
+            {generationResults.length > 0 && (
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Recent Results</h3>
@@ -297,16 +350,15 @@ const TryOnStudio = () => {
                       if (window.confirm('Clear all saved history?')) {
                         storageService.clearGenerationHistory();
                         setGenerationResults([]);
-                        setCurrentResult(null);
                       }
                     }}
-                    className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                    title="Clear History"
+                    className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center space-x-1"
                   >
                     <Trash2 className="w-4 h-4" />
+                    <span>Clear All</span>
                   </button>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   {generationResults.slice(1, 9).map((result, index) => (
                     <div

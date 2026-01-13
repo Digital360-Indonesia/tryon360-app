@@ -706,4 +706,103 @@ router.get('/history', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/generation/logs
+ * Get all generation logs with filtering
+ */
+router.get('/logs', async (req, res) => {
+  try {
+    const { provider, modelId, status, limit = 100, page = 1 } = req.query;
+    const pool = require('../config/database').getPool();
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Build query
+    let query = 'SELECT * FROM generations WHERE 1=1';
+    let params = [];
+
+    if (provider) {
+      query += ' AND provider = ?';
+      params.push(provider);
+    }
+
+    if (modelId) {
+      query += ' AND modelId = ?';
+      params.push(modelId);
+    }
+
+    if (status) {
+      query += ' AND status = ?';
+      params.push(status);
+    }
+
+    // Add ordering and pagination
+    query += ' ORDER BY createdAt DESC LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), offset);
+
+    const [rows] = await pool.execute(query, params);
+
+    // Get total count
+    let countQuery = 'SELECT COUNT(*) as total FROM generations WHERE 1=1';
+    let countParams = [];
+
+    if (provider) {
+      countQuery += ' AND provider = ?';
+      countParams.push(provider);
+    }
+
+    if (modelId) {
+      countQuery += ' AND modelId = ?';
+      countParams.push(modelId);
+    }
+
+    if (status) {
+      countQuery += ' AND status = ?';
+      countParams.push(status);
+    }
+
+    const [countRows] = await pool.execute(countQuery, countParams);
+    const total = countRows[0].total;
+
+    res.json({
+      success: true,
+      data: rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error fetching logs:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/generation/logs
+ * Clear all generation logs
+ */
+router.delete('/logs', async (req, res) => {
+  try {
+    const pool = require('../config/database').getPool();
+
+    const [result] = await pool.execute('DELETE FROM generations');
+
+    res.json({
+      success: true,
+      message: `${result.affectedRows} logs cleared successfully`
+    });
+  } catch (error) {
+    console.error('❌ Error clearing logs:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

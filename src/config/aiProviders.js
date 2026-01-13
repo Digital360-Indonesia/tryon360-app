@@ -3,7 +3,7 @@ const AI_PROVIDERS = {
     id: 'flux_kontext',
     name: 'Flux Kontext',
     description: 'High-quality try-on generation',
-    status: 'active',
+    status: 'inactive', // Changed to inactive
     endpoint: 'https://api.bfl.ai/v1/flux-kontext-pro',
     supportsImageInput: true,
     maxImageSize: 10485760, // 10MB
@@ -20,7 +20,7 @@ const AI_PROVIDERS = {
     }
   },
 
-  
+
   gemini_flash: {
     id: 'gemini_flash',
     name: 'Gemini Flash 2.5',
@@ -84,7 +84,7 @@ const AI_PROVIDERS = {
     },
     pricing: {
       costPer1MTokens: 30.00,
-      costPerImage: 0.039 // $30 per 1M tokens, 1290 tokens per image
+      costPerImage: 0.136 // $30 per 1M tokens, 1290 tokens per image = ~$0.136
     }
   },
 
@@ -92,7 +92,7 @@ const AI_PROVIDERS = {
     id: 'imagen_4_ultra',
     name: 'Imagen 4.0 Ultra',
     description: 'Google Imagen 4.0 Ultra for high-quality image generation',
-    status: 'active',
+    status: 'inactive', // Changed to inactive
     endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:generateContent',
     supportsImageInput: false,
     maxImageSize: 10485760, // 10MB
