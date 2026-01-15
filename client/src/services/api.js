@@ -86,15 +86,9 @@ export const apiMethods = {
     return response.data;
   },
 
-  async getLogs(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    const url = queryString ? `/generation/logs?${queryString}` : '/generation/logs';
-    const response = await api.get(url);
-    return response.data;
-  },
-
-  async clearLogs() {
-    const response = await api.delete('/generation/logs');
+  // Get generation history from backend
+  async getGenerationHistory(params = {}) {
+    const response = await api.get('/generation/history', { params });
     return response.data;
   },
 
@@ -109,17 +103,6 @@ export const apiMethods = {
     const response = await api.get('/health', {
       baseURL: API_BASE_URL.replace('/api', '') // Remove /api for health check
     });
-    return response.data;
-  },
-
-  // Generic GET/DELETE methods for any API endpoint
-  async get(endpoint) {
-    const response = await api.get(endpoint);
-    return response.data;
-  },
-
-  async delete(endpoint) {
-    const response = await api.delete(endpoint);
     return response.data;
   }
 };

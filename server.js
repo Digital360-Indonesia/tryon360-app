@@ -11,7 +11,11 @@ const app = express();
 const PORT = process.env.PORT || 3000; // Default to 3000 for single app
 
 // Middleware
-app.use(cors());
+// CORS configuration for development
+app.use(cors({
+  origin: ['http://localhost:7007', 'http://localhost:3000', 'http://localhost:9901'],
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
