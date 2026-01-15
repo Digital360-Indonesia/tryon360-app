@@ -21,6 +21,7 @@ const GenerationLogs = () => {
   // Load logs on mount and when page changes
   useEffect(() => {
     loadLogs();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   const loadLogs = async () => {

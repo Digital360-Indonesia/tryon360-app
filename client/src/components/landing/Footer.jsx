@@ -25,7 +25,7 @@ const Footer = ({ language = 'en' }) => {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [apparelTypes.length]);
 
   const translations = {
     en: {

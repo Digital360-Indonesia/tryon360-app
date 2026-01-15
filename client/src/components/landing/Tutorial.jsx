@@ -3,7 +3,7 @@ import './Tutorial.css';
 
 const Tutorial = ({ language = 'en' }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [isPaused, setIsPaused] = useState(false);
+  const [isPaused] = useState(false);
   const timeoutRef = useRef(null);
   const isDocumentVisible = useRef(true);
 
@@ -87,7 +87,7 @@ const Tutorial = ({ language = 'en' }) => {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [currentStep, isPaused]);
+  }, [currentStep, isPaused]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -107,7 +107,7 @@ const Tutorial = ({ language = 'en' }) => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [currentStep, isPaused]);
+  }, [currentStep, isPaused]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <section className="tutorial-section" id="tutorial">

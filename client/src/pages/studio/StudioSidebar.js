@@ -29,7 +29,6 @@ export function StudioSidebar({ children }) {
     setProvider,
     uploads,
     setUpload,
-    detailConfigs,
     setDetailConfig,
     isGenerating,
     canGenerate,

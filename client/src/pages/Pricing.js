@@ -149,7 +149,7 @@ const Pricing = ({ language: propLanguage = 'en' }) => {
                 href="https://wa.me/6285706679500?text=Hi%20Digital360%2C%20I%27d%20like%20to%20book%20a%20demo%20for%20TryOn360%20Enterprise%20plan"
                 className="pricing-cta secondary"
                 target="_blank"
-                rel="noopener"
+                rel="noreferrer"
               >
                 {t.ctaEnterprise}
               </a>

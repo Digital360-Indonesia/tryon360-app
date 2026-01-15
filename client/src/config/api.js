@@ -4,7 +4,6 @@ const API_CONFIG = {
   getBackendUrl: () => {
     // Check if we're running on Netlify (production)
     const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-    const port = typeof window !== 'undefined' ? window.location.port : '';
     const isNetlifyProduction = hostname.includes('netlify.app');
     const isVercelProduction = hostname.includes('vercel.app');
     const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
