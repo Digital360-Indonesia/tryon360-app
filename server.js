@@ -11,9 +11,29 @@ const app = express();
 const PORT = process.env.PORT || 3000; // Default to 3000 for single app
 
 // Middleware
-// CORS configuration for development
+// CORS configuration - allow local development and Vercel deployment
+const allowedOrigins = [
+  'http://localhost:7007',
+  'http://localhost:3000',
+  'http://localhost:9901',
+  process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+  // Add your Vercel deployment URL here
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
+].filter(Boolean);
+
 app.use(cors({
-  origin: ['http://localhost:7007', 'http://localhost:3000', 'http://localhost:9901'],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    // Allow all origins in development
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));

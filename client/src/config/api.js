@@ -6,17 +6,28 @@ const API_CONFIG = {
     const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
     const port = typeof window !== 'undefined' ? window.location.port : '';
     const isNetlifyProduction = hostname.includes('netlify.app');
+    const isVercelProduction = hostname.includes('vercel.app');
     const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
+
+    // If environment variable is explicitly set, use it (highest priority)
+    if (process.env.REACT_APP_API_URL) {
+      const backendUrl = process.env.REACT_APP_API_URL.replace('/api', '');
+      return backendUrl;
+    }
+
+    // Vercel deployment - use local backend or configured URL
+    if (isVercelProduction) {
+      // For Vercel, use REVERCEL_APP_API_URL if set, otherwise assume local backend
+      if (process.env.REACT_APP_API_URL) {
+        return process.env.REACT_APP_API_URL.replace('/api', '');
+      }
+      // Default: assume backend is running locally
+      return 'http://localhost:3000';
+    }
 
     // If we're on Netlify, always use production backend
     if (isNetlifyProduction) {
       return 'https://tryon-app-backend.fly.dev';
-    }
-
-    // If environment variable is explicitly set, use it
-    if (process.env.REACT_APP_API_URL) {
-      const backendUrl = process.env.REACT_APP_API_URL.replace('/api', '');
-      return backendUrl;
     }
 
     // For development: backend runs on port 3000, frontend on 7007
