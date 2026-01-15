@@ -25,9 +25,10 @@ const ModelSelector = ({ selectedModel, onModelChange, models: propModels }) => 
     try {
       setLoading(true);
       const response = await api.get('/models');
-      setModels(response.data.models);
+      setModels(response.data.models || []);
     } catch (err) {
       console.error('Failed to load models:', err);
+      setModels([]);
     } finally {
       setLoading(false);
     }
@@ -39,7 +40,7 @@ const ModelSelector = ({ selectedModel, onModelChange, models: propModels }) => 
   };
 
   // Get current model data
-  const currentModel = typeof selectedModel === 'object' ? selectedModel : models.find(m => m.id === selectedModel);
+  const currentModel = typeof selectedModel === 'object' ? selectedModel : (models || []).find(m => m.id === selectedModel);
   const hasSelection = !!currentModel;
 
   return (
@@ -97,7 +98,7 @@ const ModelSelector = ({ selectedModel, onModelChange, models: propModels }) => 
             ) : (
               <>
                 <h4 className="font-bold text-gray-700">Choose a Model</h4>
-                <p className="text-sm text-gray-500">Click to select from {loading ? '...' : models.length} models</p>
+                <p className="text-sm text-gray-500">Click to select from {loading ? '...' : (models?.length || 0)} models</p>
               </>
             )}
           </div>
