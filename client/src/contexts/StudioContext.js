@@ -52,7 +52,7 @@ const initialState = {
   // UI State
   showModelModal: false,
   showPoseModal: false,
-  sidebarSection: 'model',               // 'model' | 'pose' | 'upload' | 'details' | 'ai'
+  sidebarSection: 'provider',            // 'provider' | 'model' | 'upload' | 'details' | 'ai'
 };
 
 // ============================================

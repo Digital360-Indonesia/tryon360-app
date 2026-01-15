@@ -177,8 +177,8 @@ export function StudioSidebar({ children }) {
         })}
       </div>
 
-      {/* Tab Content - only scroll for Upload tab */}
-      <div className={`flex-1 p-6 ${activeTab === 'upload' ? 'overflow-y-auto' : ''}`}>
+      {/* Tab Content - scrollable for all tabs */}
+      <div className="flex-1 p-6 overflow-y-auto">
         {renderTabContent()}
       </div>
 
