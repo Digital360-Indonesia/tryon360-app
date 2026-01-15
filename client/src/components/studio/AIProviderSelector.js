@@ -19,11 +19,19 @@ const PROVIDER_ICONS = {
 const DEFAULT_PROVIDERS = [
   {
     id: 'gemini_2_5_flash_image',
-    name: 'Gemini 2.5 Flash',
-    description: 'Fast and affordable generation',
-    cost: 0.002,
+    name: 'Gemini 2.5 Flash Image',
+    description: 'Google Gemini 2.5 Flash for image generation',
+    cost: 0.039,
     avgTime: 15,
     tier: 'free'
+  },
+  {
+    id: 'nano_banana',
+    name: 'Nano Banana Gemini 3 Pro',
+    description: 'Google Gemini 3 Pro Preview for image generation',
+    cost: 0.136,
+    avgTime: 20,
+    tier: 'standard'
   },
   {
     id: 'flux_kontext',
