@@ -42,10 +42,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static file serving
 app.use('/models', express.static(path.join(__dirname, 'models')));
 
-// Serve React build files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'build')));
-}
+// Serve React build files (always serve for single port setup)
+app.use(express.static(path.join(__dirname, 'build')));
 
 // Serve generated files from single location
 const generatedPath = path.join(__dirname, 'generated');
