@@ -104,6 +104,8 @@ const ACTION_TYPES = {
 // REDUCER
 // ============================================
 function studioReducer(state, action) {
+  console.log('🎯 Reducer action:', action.type, action.payload);
+  const newState = (() => {
   switch (action.type) {
     // Tab Actions
     case ACTION_TYPES.SET_ACTIVE_TAB:
@@ -207,6 +209,20 @@ function studioReducer(state, action) {
     default:
       return state;
   }
+  })();
+
+  // Log important state changes
+  if (action.type === ACTION_TYPES.SET_MODEL ||
+      action.type === ACTION_TYPES.SET_POSE ||
+      action.type === ACTION_TYPES.SET_UPLOAD) {
+    console.log('✨ New state:', {
+      selectedModel: newState.selectedModel,
+      selectedPose: newState.selectedPose,
+      uploads: newState.uploads
+    });
+  }
+
+  return newState;
 }
 
 // ============================================

@@ -29,10 +29,11 @@ const API_CONFIG = {
       return 'https://tryon-app-backend.fly.dev';
     }
 
-    // For development: backend runs on port 3000, frontend on 7007
+    // For development: use current origin (same port for single-port setup)
     if (isDevelopment) {
-      // In development mode, backend is on port 3000
-      return 'http://localhost:3000';
+      // In single-port mode, both frontend and backend are on same port
+      const port = window.location.port || '9901';
+      return `http://localhost:${port}`;
     }
 
     // Default fallback (production with same host)

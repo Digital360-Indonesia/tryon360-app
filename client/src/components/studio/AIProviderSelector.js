@@ -1,53 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Clock, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import api from '../../services/api';
 
 // ============================================
 // AI PROVIDER SELECTOR COMPONENT
 // ============================================
-// Compact provider selection with icons
+// Tier-based selection with star icons
 
-// Provider icons mapping
-const PROVIDER_ICONS = {
-  'flux_kontext': '/flux_icon.svg',
-  'gemini_2_5_flash_image': '/gemini_icon.png',
-  'nano_banana': '/gemini_icon.png',
-  'imagen_4_ultra': '/imagen_icon.png',
+// Star icon component
+const StarIcon = ({ className = '' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+  </svg>
+);
+
+// Provider display config
+const PROVIDER_CONFIG = {
+  'gemini_2_5_flash_image': {
+    name: 'Basic',
+    stars: 1,
+    description: 'Fast and efficient generation',
+  },
+  'nano_banana': {
+    name: 'Premium',
+    stars: 2,
+    description: 'Premium quality with advanced features',
+  }
 };
 
-// Default providers as fallback
+// Default providers - only 2 Gemini providers with tier names
 const DEFAULT_PROVIDERS = [
   {
     id: 'gemini_2_5_flash_image',
-    name: 'Gemini 2.5 Flash Image',
-    description: 'Google Gemini 2.5 Flash for image generation',
-    cost: 0.039,
-    avgTime: 15,
-    tier: 'free'
+    name: 'Basic',
+    description: 'Fast and efficient generation',
+    stars: 1,
   },
   {
     id: 'nano_banana',
-    name: 'Nano Banana Gemini 3 Pro',
-    description: 'Google Gemini 3 Pro Preview for image generation',
-    cost: 0.136,
-    avgTime: 20,
-    tier: 'standard'
-  },
-  {
-    id: 'flux_kontext',
-    name: 'Flux Kontext',
-    description: 'High quality with context awareness',
-    cost: 0.005,
-    avgTime: 20,
-    tier: 'standard'
-  },
-  {
-    id: 'imagen_4_ultra',
-    name: 'Imagen 4 Ultra',
-    description: 'Premium quality output',
-    cost: 0.015,
-    avgTime: 30,
-    tier: 'premium'
+    name: 'Premium',
+    description: 'Premium quality with advanced features',
+    stars: 2,
   }
 ];
 
@@ -68,7 +61,21 @@ export function AIProviderSelector({
       setLoading(true);
       const response = await api.get('/generation/providers');
       if (response.data?.providers) {
-        setProviders(response.data.providers);
+        // Filter to only include our 2 Gemini providers
+        const geminiProviders = response.data.providers.filter(
+          p => p.id === 'gemini_2_5_flash_image' || p.id === 'nano_banana'
+        );
+        if (geminiProviders.length > 0) {
+          setProviders(geminiProviders.map(p => {
+            const config = PROVIDER_CONFIG[p.id] || PROVIDER_CONFIG['gemini_2_5_flash_image'];
+            return {
+              id: p.id,
+              name: config.name,
+              description: config.description,
+              stars: config.stars
+            };
+          }));
+        }
       }
     } catch (err) {
       console.error('Failed to load providers:', err);
@@ -98,7 +105,6 @@ export function AIProviderSelector({
       <div className="space-y-2">
         {providers.map((provider) => {
           const isSelected = provider.id === selectedProvider;
-          const iconSrc = PROVIDER_ICONS[provider.id];
 
           return (
             <button
@@ -113,24 +119,19 @@ export function AIProviderSelector({
               `}
             >
               <div className="flex items-center justify-between">
-                {/* Left: Icon + Name */}
+                {/* Left: Stars + Name */}
                 <div className="flex items-center space-x-2.5 flex-1 min-w-0">
-                  {/* Provider Icon */}
-                  <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
-                    isSelected ? 'bg-white' : 'bg-gray-100'
-                  }`}>
-                    {iconSrc ? (
-                      iconSrc.endsWith('.svg') ? (
-                        <img src={iconSrc} alt={provider.name} className="w-6 h-6" />
-                      ) : (
-                        <img src={iconSrc} alt={provider.name} className="w-8 h-8 rounded" />
-                      )
-                    ) : (
-                      <div className="w-6 h-6 bg-gradient-to-br from-gray-300 to-gray-400 rounded"></div>
-                    )}
+                  {/* Star Icons */}
+                  <div className={`flex space-x-0.5 flex-shrink-0 ${isSelected ? 'opacity-100' : 'opacity-70'}`}>
+                    {[...Array(provider.stars)].map((_, i) => (
+                      <StarIcon
+                        key={i}
+                        className={`w-4 h-4 ${isSelected ? 'text-yellow-500' : 'text-yellow-400'}`}
+                      />
+                    ))}
                   </div>
 
-                  {/* Name + Check + Description */}
+                  {/* Name */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-1.5">
                       {isSelected && (
@@ -140,22 +141,12 @@ export function AIProviderSelector({
                         {provider.name}
                       </h4>
                     </div>
-                    {/* Description - only show on hover */}
-                    <p className="text-xs text-gray-500 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity truncate">
+                    {/* Description - show on hover or when selected */}
+                    <p className={`text-xs text-gray-500 mt-0.5 transition-opacity ${
+                      isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}>
                       {provider.description}
                     </p>
-                  </div>
-                </div>
-
-                {/* Right: Cost + Time */}
-                <div className="flex items-center space-x-3 text-xs flex-shrink-0">
-                  <div className="flex items-center text-gray-600">
-                    <DollarSign className="w-3 h-3" />
-                    <span>${provider.cost?.toFixed(3) || '0.002'}</span>
-                  </div>
-                  <div className="flex items-center text-gray-600">
-                    <Clock className="w-3 h-3" />
-                    <span>{provider.avgTime || 15}s</span>
                   </div>
                 </div>
               </div>

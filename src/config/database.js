@@ -79,6 +79,22 @@ class Database {
       await this.pool.query(createGenerationsTable);
       console.log('✅ Generations table created successfully');
 
+      // Create users table for auth
+      const createUsersTable = `
+        CREATE TABLE IF NOT EXISTS users (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          phoneNumber VARCHAR(20) UNIQUE NOT NULL,
+          name VARCHAR(255) DEFAULT '',
+          password VARCHAR(255) NOT NULL,
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_phoneNumber (phoneNumber)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `;
+
+      await this.pool.query(createUsersTable);
+      console.log('✅ Users table created successfully');
+
       return true;
     } catch (error) {
       console.error('❌ Failed to create tables:', error);

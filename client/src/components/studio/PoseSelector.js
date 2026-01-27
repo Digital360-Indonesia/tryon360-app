@@ -139,7 +139,7 @@ const PoseSelector = ({ selectedPose, onPoseChange, poses: propPoses }) => {
       </div>
 
       {/* Pose Grid */}
-      <div className="grid grid-cols-2 gap-2 mt-3 max-h-64 overflow-y-auto">
+      <div className="grid grid-cols-2 gap-2 mt-3">
         {poseOptions.map((pose) => {
           const IconComponent = pose.icon;
           const isSelected = selectedPose === pose.id;

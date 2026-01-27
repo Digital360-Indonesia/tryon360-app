@@ -28,9 +28,9 @@ export function StudioHeader() {
 
   return (
     <header className="bg-white border-b border-gray-200">
-      <div className="flex items-center justify-between px-6 py-4">
-        {/* Logo */}
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center justify-center px-6 py-4 relative">
+        {/* Logo - absolute left */}
+        <div className="absolute left-6 flex items-center space-x-3">
           <img
             src={API_CONFIG.buildImageUrl('/try-on360-logo.png')}
             alt="Try-On 360"
@@ -55,7 +55,7 @@ export function StudioHeader() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs - centered */}
         <nav className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -90,12 +90,6 @@ export function StudioHeader() {
             );
           })}
         </nav>
-
-        {/* Version Info */}
-        <div className="text-right">
-          <p className="text-sm font-medium text-gray-900">v2.6</p>
-          <p className="text-xs text-gray-500">Studio</p>
-        </div>
       </div>
     </header>
   );

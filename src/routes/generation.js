@@ -672,21 +672,36 @@ router.get('/status/:jobId', async (req, res) => {
 router.get('/history', async (req, res) => {
   try {
     const { modelId, limit = 20, page = 1 } = req.query;
+    const pool = require('../config/database').getPool();
+    const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    const query = {};
+    // Build WHERE clause
+    let whereClause = 'WHERE 1=1';
+    const params = [];
+
     if (modelId) {
-      query.modelId = modelId;
+      whereClause += ' AND modelId = ?';
+      params.push(modelId);
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    // Get total count
+    const countQuery = `SELECT COUNT(*) as total FROM generations ${whereClause}`;
+    const [countResult] = await pool.query(countQuery, params);
+    const total = countResult[0].total;
 
-    const generations = await Generation.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .select('-metadata -processedFiles');
+    // Get generations with pagination
+    const selectQuery = `
+      SELECT
+        id, jobId, modelId, pose, provider, status, progress,
+        imageUrl, imagePath, prompt, error, processingTime,
+        createdAt, updatedAt, endTime
+      FROM generations
+      ${whereClause}
+      ORDER BY createdAt DESC
+      LIMIT ? OFFSET ?
+    `;
 
-    const total = await Generation.countDocuments(query);
+    const [generations] = await pool.query(selectQuery, [...params, parseInt(limit), offset]);
 
     res.json({
       success: true,
@@ -699,6 +714,7 @@ router.get('/history', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Error fetching history:', error);
     res.status(500).json({
       success: false,
       error: error.message

@@ -69,18 +69,19 @@ app.get('/api/health', healthHandler);
 // API Routes
 app.use('/api/models', require('./src/routes/models'));
 app.use('/api/generation', require('./src/routes/generation'));
+app.use('/api/auth', require('./src/routes/auth'));
 
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('API Error:', error);
-  
+
   if (error.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       success: false,
       error: 'File too large. Maximum size is 10MB.'
     });
   }
-  
+
   if (error.code === 'LIMIT_UNEXPECTED_FILE') {
     return res.status(400).json({
       success: false,
@@ -93,10 +94,6 @@ app.use((error, req, res, next) => {
     error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
   });
 });
-
-// API Routes
-app.use('/api/models', require('./src/routes/models'));
-app.use('/api/generation', require('./src/routes/generation'));
 
 // Serve React app for any non-API routes (both production and development)
 if (process.env.NODE_ENV === 'production') {

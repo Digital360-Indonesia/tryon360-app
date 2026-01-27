@@ -105,9 +105,9 @@ export function GeneratedPreview({
   // ==================== EMPTY STATE ====================
   if (!isGenerating && !imageUrl && !error) {
     return (
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="text-center max-w-md">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="flex-1 flex items-center justify-center p-6 h-full">
+        <div className="flex flex-col items-center justify-center text-center max-w-md mt-32">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
             <ImageIcon className="w-12 h-12 text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">

@@ -11,13 +11,11 @@ export function AddOnsPrompt({
   value = '',
   onChange,
   placeholder = "Add custom enhancements...",
-  maxLength = 200,
+  maxLength = 100,
   suggestions = [
-    'Add golden embroidery on collar',
-    'Pearl buttons on front placket',
-    'Make fabric look like premium silk',
-    'Add subtle shimmer effect',
-    'Intricate lace trim on sleeves'
+    'Add red hats',
+    'Use sunglasses',
+    'Make model do running pose'
   ]
 }) {
   const [isFocused, setIsFocused] = useState(false);
@@ -73,21 +71,13 @@ export function AddOnsPrompt({
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Main Container */}
-      <div
-        className={`
-          relative bg-white rounded-xl border-2 transition-all duration-200
-          ${isFocused
-            ? 'border-purple-400 ring-2 ring-purple-100 shadow-lg'
-            : 'border-gray-200 hover:border-gray-300 shadow-sm'
-          }
-        `}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+      {/* Simplified Container - no card within card */}
+      <div className="relative">
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
+            <div className="w-6 h-6 bg-gray-300 rounded-lg flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5 text-white" />
             </div>
             <h4 className="text-sm font-semibold text-gray-900">Smart Add-ons</h4>
           </div>
@@ -104,59 +94,67 @@ export function AddOnsPrompt({
         </div>
 
         {/* Input */}
-        <div className="px-4 pb-3">
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => onChange?.(e.target.value)}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            placeholder={placeholder}
-            maxLength={maxLength}
-            rows={1}
-            className="
-              w-full px-3 py-2 text-sm text-gray-900 placeholder-gray-400
-              border border-gray-200 rounded-lg resize-none
-              focus:outline-none focus:ring-0 focus:border-transparent
-              bg-gray-50 focus:bg-white transition-colors
-              min-h-[44px] max-h-[120px]
-            "
-            style={{ height: isFocused && value ? 'auto' : '44px' }}
-          />
+        <div className="relative">
+          <div
+            className={`
+              rounded-xl border-2 transition-all duration-200
+              ${isFocused
+                ? 'border-gray-400 ring-2 ring-gray-100'
+                : 'border-gray-200 hover:border-gray-300'
+              }
+            `}
+          >
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => onChange?.(e.target.value)}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              placeholder={placeholder}
+              maxLength={maxLength}
+              rows={1}
+              className="
+                w-full px-4 py-3 text-sm text-gray-900 placeholder-gray-400
+                rounded-xl resize-none
+                focus:outline-none focus:ring-0 focus:border-transparent
+                bg-white transition-colors
+                min-h-[44px] max-h-[120px] pr-10
+              "
+              style={{ height: isFocused && value ? 'auto' : '44px' }}
+            />
 
-          {/* Tip */}
-          {isFocused && !value && (
-            <div className="flex items-start gap-2 mt-2 text-xs text-purple-600 bg-purple-50 rounded-lg px-3 py-2">
-              <Lightbulb className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <p>Click suggestions below or type custom enhancements for your garment</p>
-            </div>
-          )}
+            {/* Clear button */}
+            {value.length > 0 && (
+              <button
+                onClick={handleClear}
+                className="absolute top-3 right-3 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                title="Clear input"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
 
-          {/* Clear button */}
-          {value.length > 0 && (
-            <button
-              onClick={handleClear}
-              className="absolute top-10 right-6 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-              title="Clear input"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+        {/* Tip */}
+        <div className="flex items-start gap-2 mt-2 text-xs text-gray-600">
+          <Lightbulb className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <p>Click suggestions above or type custom enhancements for your garment</p>
         </div>
       </div>
 
-      {/* Suggestions Dropdown */}
+      {/* Suggestions Dropdown - drops UP */}
       {showSuggestions && !value && (
-        <div className="absolute z-10 w-full mt-2 bg-white rounded-xl border border-purple-200 shadow-xl overflow-hidden">
+        <div className="absolute z-10 w-full bottom-full mb-2 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
           <div className="p-2">
             <p className="text-xs font-medium text-gray-500 px-2 py-1">Quick suggestions:</p>
             {suggestions.map((suggestion, index) => (
               <button
                 key={index}
                 onClick={() => handleSuggestionClick(suggestion)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 rounded-lg transition-colors flex items-start gap-2"
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors flex items-start gap-2"
               >
-                <Sparkles className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
+                <Sparkles className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
                 <span>{suggestion}</span>
               </button>
             ))}

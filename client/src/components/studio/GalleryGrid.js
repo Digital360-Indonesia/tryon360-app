@@ -5,8 +5,8 @@ import { GalleryItem } from './GalleryItem';
 // ============================================
 // GALLERY GRID COMPONENT
 // ============================================
-// Grid layout for generation history
-// Displays items from backend API response
+// Masonry-style grid with 30px gap
+// 6 columns, images shown at their natural sizes with rounded corners
 
 export function GalleryGrid({
   generations = [],
@@ -25,7 +25,7 @@ export function GalleryGrid({
     );
   }
 
-  // Empty state
+  // Empty state (should rarely show since we have samples)
   if (generations.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
@@ -40,19 +40,16 @@ export function GalleryGrid({
             <p className="text-gray-600">
               Your generated try-on images will appear here.
             </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Create your first try-on in the Generate tab
-            </p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Grid with items
+  // Masonry-style grid with 30px gap on all sides, 6 columns
   return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="p-[30px]">
+      <div className="columns-1 sm:columns-2 lg:columns-4 xl:columns-6 gap-[30px]">
         {generations.map((gen) => (
           <GalleryItem
             key={gen.id}
@@ -63,6 +60,9 @@ export function GalleryGrid({
             pose={gen.pose}
             createdAt={gen.createdAt}
             processingTime={gen.processingTime}
+            isSample={gen.isSample}
+            userName={gen.userName}
+            prompt={gen.prompt}
             onClick={() => onItemClick(gen)}
           />
         ))}

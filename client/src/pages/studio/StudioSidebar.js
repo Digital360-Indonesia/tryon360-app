@@ -42,7 +42,10 @@ export function StudioSidebar({ children }) {
   };
 
   const handleModelChange = (model) => {
-    setSelectedModel(model);
+    console.log('🔥 handleModelChange called with:', model);
+    const modelId = typeof model === 'object' ? model?.id : model;
+    console.log('🔥 Extracted modelId:', modelId);
+    setSelectedModel(modelId);
   };
 
   const handleGarmentUpload = (file) => {
@@ -104,7 +107,10 @@ export function StudioSidebar({ children }) {
             />
             <PoseSelector
               selectedPose={selectedPose}
-              onPoseChange={setSelectedPose}
+              onPoseChange={(pose) => {
+                console.log('🔥 Pose change called with:', pose);
+                setSelectedPose(pose);
+              }}
             />
           </div>
         );
@@ -144,7 +150,7 @@ export function StudioSidebar({ children }) {
   };
 
   return (
-    <aside className="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
+    <aside className="w-[360px] bg-white border-r border-gray-200 flex flex-col h-full">
       {/* Tabs Header */}
       <div className="flex border-b border-gray-200 bg-white">
         {TABS.map((tab) => {
@@ -159,14 +165,14 @@ export function StudioSidebar({ children }) {
               className={`
                 flex-1 relative px-3 py-3 text-xs font-medium border-b-2 transition-colors
                 ${isActive
-                  ? 'border-blue-500 text-blue-600 bg-blue-50'
+                  ? 'border-gray-800 text-gray-900 bg-gray-100'
                   : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }
               `}
               title={tab.label}
             >
               <div className="flex flex-col items-center space-y-1">
-                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-gray-800' : 'text-gray-500'}`} />
                 <span>{tab.label}</span>
                 {isComplete && (
                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full absolute top-2 right-2" />
@@ -192,7 +198,7 @@ export function StudioSidebar({ children }) {
             flex items-center justify-center gap-2
             transition-all duration-200
             ${canGenerate && !isGenerating
-              ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+              ? 'bg-gray-800 hover:bg-gray-900 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
               : 'bg-gray-300 cursor-not-allowed'
             }
           `}
@@ -209,12 +215,6 @@ export function StudioSidebar({ children }) {
             </>
           )}
         </button>
-
-        {!canGenerate && !isGenerating && (
-          <div className="mt-2 text-xs text-center text-gray-600">
-            Complete: Provider • Model • Pose • Image
-          </div>
-        )}
       </div>
     </aside>
   );

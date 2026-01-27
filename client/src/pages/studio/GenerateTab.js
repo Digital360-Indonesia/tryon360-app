@@ -194,7 +194,7 @@ export function GenerateTab() {
           value={smartAddons}
           onChange={setSmartAddons}
           placeholder="Add custom enhancements... e.g., 'Add golden embroidery on collar, pearl buttons on front'"
-          maxLength={200}
+          maxLength={100}
         />
       </div>
     </div>

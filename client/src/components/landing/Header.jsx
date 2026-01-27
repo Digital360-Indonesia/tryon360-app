@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import './Header.css';
 
 const Header = () => {
   const { language, setLanguage } = useLanguage();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
+  // Check for logged in user
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    const userData = JSON.parse(localStorage.getItem('user')) || null;
+    if (token && userData) {
+      setUser(userData);
+    } else {
+      setUser(null);
+    }
+  }, []);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -26,6 +39,18 @@ const Header = () => {
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
     document.body.style.overflow = '';
+  };
+
+  const handleTryOnClick = (e) => {
+    e.preventDefault();
+    if (user) {
+      // Already logged in - go to studio
+      navigate('/studio');
+    } else {
+      // Not logged in - go to signup
+      navigate('/signup');
+    }
+    closeMobileMenu();
   };
 
   useEffect(() => {
@@ -122,9 +147,12 @@ const Header = () => {
             </Link>
           </li>
           <li className="nav-item">
-            <Link to="/app" className="nav-link nav-link-tryon" onClick={closeMobileMenu}>
-              TryOn360
-            </Link>
+            <button
+              onClick={handleTryOnClick}
+              className="nav-link nav-link-tryon"
+            >
+              {user ? `Hi, ${user.name?.split(' ')[0]}!` : 'TryOn360'}
+            </button>
           </li>
         </ul>
       </nav>
