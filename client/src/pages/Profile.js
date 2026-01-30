@@ -15,11 +15,9 @@ const Profile = () => {
   const [phoneNumber, setPhoneNumber] = useState(user.phoneNumber || '');
 
   // Password states
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswords, setShowPasswords] = useState({
-    current: false,
     new: false,
     confirm: false
   });
@@ -124,11 +122,6 @@ const Profile = () => {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
 
-    if (!currentPassword) {
-      showMessage('error', 'Please enter your current password');
-      return;
-    }
-
     if (newPassword.length < 6) {
       showMessage('error', 'New password must be at least 6 characters');
       return;
@@ -144,14 +137,12 @@ const Profile = () => {
     try {
       const token = localStorage.getItem('authToken');
       await api.put('/auth/password', {
-        currentPassword,
         newPassword
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       showMessage('success', 'Password changed successfully!');
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error) {
@@ -201,18 +192,15 @@ const Profile = () => {
             <label htmlFor="phone" className="form-label">
               Phone Number
             </label>
-            <div className="phone-input-wrapper">
-              <span className="country-code">+62</span>
-              <input
-                id="phone"
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').substring(0, 13))}
-                placeholder="81234567890"
-                className="form-input"
-                disabled={isLoading}
-              />
-            </div>
+            <input
+              id="phone"
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').substring(0, 13))}
+              placeholder="6281234567890"
+              className="form-input"
+              disabled={isLoading}
+            />
           </div>
 
           <button
@@ -237,30 +225,6 @@ const Profile = () => {
           Change Password
         </h2>
         <form onSubmit={handlePasswordChange} className="profile-form">
-          <div className="form-group">
-            <label htmlFor="current-password" className="form-label">
-              Current Password
-            </label>
-            <div className="password-input-wrapper">
-              <input
-                id="current-password"
-                type={showPasswords.current ? 'text' : 'password'}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter current password"
-                className="form-input"
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => togglePasswordVisibility('current')}
-                className="toggle-password-btn"
-              >
-                {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
           <div className="form-group">
             <label htmlFor="new-password" className="form-label">
               New Password

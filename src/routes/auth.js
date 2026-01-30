@@ -283,12 +283,12 @@ router.put('/password', async (req, res) => {
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    const { currentPassword, newPassword } = req.body;
+    const { newPassword } = req.body;
 
-    if (!currentPassword || !newPassword) {
+    if (!newPassword) {
       return res.status(400).json({
         success: false,
-        error: 'Current and new password are required'
+        error: 'New password is required'
       });
     }
 
@@ -300,31 +300,6 @@ router.put('/password', async (req, res) => {
     }
 
     const pool = getPool();
-
-    // Get user with password
-    const [users] = await pool.execute(
-      'SELECT id, password FROM users WHERE id = ?',
-      [decoded.userId]
-    );
-
-    if (users.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-
-    const user = users[0];
-
-    // Verify current password
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        error: 'Current password is incorrect'
-      });
-    }
 
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
