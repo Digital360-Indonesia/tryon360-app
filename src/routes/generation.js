@@ -780,7 +780,7 @@ router.get('/history', checkAuth, async (req, res) => {
     const selectQuery = `
       SELECT
         id, jobId, userId, modelId, pose, provider, status, progress,
-        imageUrl, imagePath, prompt, error, processingTime,
+        imageUrl, imagePath, prompt, metadata, processingTime,
         createdAt, updatedAt, endTime
       FROM generations
       ${whereClause}
