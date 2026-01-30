@@ -11,13 +11,14 @@ const app = express();
 const PORT = process.env.PORT || 3000; // Default to 3000 for single app
 
 // Middleware
-// CORS configuration - allow local development and Vercel deployment
+// CORS configuration - allow local development and production domains
 const allowedOrigins = [
   'http://localhost:7007',
   'http://localhost:3000',
   'http://localhost:9901',
+  'https://tryon.digital360.id',
   process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
-  // Add your Vercel deployment URL here
+  // Add additional origins from environment variable
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
 ].filter(Boolean);
 
@@ -28,9 +29,11 @@ app.use(cors({
     // Allow all origins in development
     if (process.env.NODE_ENV !== 'production') return callback(null, true);
     // Check if origin is in allowed list
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      console.log('CORS blocked for origin:', origin);
+      console.log('Allowed origins:', allowedOrigins);
       callback(new Error('CORS not allowed'));
     }
   },
