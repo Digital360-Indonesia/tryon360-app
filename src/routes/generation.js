@@ -6,7 +6,8 @@ const { v4: uuidv4 } = require('uuid');
 const AIService = require('../services/aiService');
 const ImageProcessor = require('../services/imageProcessor');
 const { PROFESSIONAL_MODELS } = require('../config/models');
-const Generation = require('../models/Generation');
+const { checkAuth } = require('../middleware/auth');
+const database = require('../config/database');
 
 const router = express.Router();
 
@@ -41,7 +42,7 @@ router.post('/try-on', upload.fields([
   { name: 'detail1', maxCount: 1 },
   { name: 'detail2', maxCount: 1 },
   { name: 'detail3', maxCount: 1 }
-]), async (req, res) => {
+]), checkAuth, async (req, res) => {
   const jobId = uuidv4();
   req.requestTime = Date.now(); // Track start time
   let generationResult = null; // Declare generationResult variable outside try blocks
@@ -111,63 +112,114 @@ router.post('/try-on', upload.fields([
 
     console.log('✅ Validation passed, initializing services...');
 
-    // Initialize job tracking in MongoDB
-    generation = new Generation({
+    // Check user tokens
+    console.log('💰 Checking user tokens...');
+    const pool = database.getPool();
+
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+
+    const [userRows] = await pool.execute(
+      'SELECT id, tokens FROM users WHERE id = ?',
+      [req.user.id]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const user = userRows[0];
+
+    if (user.tokens <= 0) {
+      return res.status(403).json({
+        success: false,
+        error: 'Token habis. Silakan hubungi admin untuk menambah token.'
+      });
+    }
+
+    console.log('✅ User has tokens:', { userId: user.id, currentTokens: user.tokens });
+
+    // Initialize job tracking - INSERT to MySQL
+    let generationId = null;
+
+    console.log('💾 Saving to MySQL...');
+    console.log('📋 Generation data to save:', {
       jobId,
       modelId,
       pose,
       provider: providerId,
-      status: 'processing',
-      progress: 0,
-      userIp: req.ip,
-      userAgent: req.get('User-Agent')
-    });
-
-    console.log('💾 Saving to MongoDB...');
-    console.log('📋 Generation object to save:', {
-      jobId: generation.jobId,
-      modelId: generation.modelId,
-      pose: generation.pose,
-      provider: generation.provider,
-      status: generation.status,
-      progress: generation.progress,
-      userIp: generation.userIp
+      userId: req.user.id,
+      userIp: req.ip
     });
 
     try {
-      await generation.save();
-      console.log('✅ MongoDB save successful:', {
-        jobId: generation.jobId,
-        _id: generation._id,
-        createdAt: generation.createdAt
-      });
-    } catch (mongoError) {
-      console.error('💥 MongoDB save failed:', {
-        error: mongoError.message,
-        stack: mongoError.stack,
-        name: mongoError.name,
-        code: mongoError.code,
+      // Insert generation record to MySQL
+      const [insertResult] = await pool.execute(
+        `INSERT INTO generations (jobId, userId, modelId, pose, provider, status, progress, userIp, userAgent, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, 'processing', 0, ?, ?, NOW(), NOW())`,
+        [jobId, req.user.id, modelId, pose, providerId, req.ip, req.get('User-Agent')]
+      );
+
+      generationId = insertResult.insertId;
+      console.log('✅ MySQL insert successful:', {
+        generationId,
         jobId
       });
-      throw mongoError;
+
+      // Deduct 1 token
+      const newTokenCount = user.tokens - 1;
+      await pool.execute(
+        'UPDATE users SET tokens = ? WHERE id = ?',
+        [newTokenCount, req.user.id]
+      );
+
+      // Create transaction record
+      await pool.execute(
+        'INSERT INTO token_transactions (userId, type, amount, description, generationId, createdAt) VALUES (?, ?, ?, ?, ?, NOW())',
+        [req.user.id, 'used', 1, 'Try-on generation', generationId]
+      );
+
+      console.log('💰 Token deducted:', {
+        userId: req.user.id,
+        previousTokens: user.tokens,
+        newTokens: newTokenCount
+      });
+    } catch (dbError) {
+      console.error('💥 MySQL insert failed:', {
+        error: dbError.message,
+        stack: dbError.stack,
+        name: dbError.name,
+        code: dbError.code,
+        jobId
+      });
+      throw dbError;
     }
 
     // Update progress
     const updateProgress = async (stage, progress) => {
       try {
         console.log(`📊 Progress: ${stage} (${progress}%)`);
-        console.log('🔄 Updating MongoDB progress...');
-        const result = await generation.updateProgress(progress);
+        console.log('🔄 Updating MySQL progress...');
+        await pool.execute(
+          'UPDATE generations SET progress = ? WHERE id = ?',
+          [progress, generationId]
+        );
         console.log('✅ Progress updated:', {
-          matchedCount: result.matchedCount,
-          modifiedCount: result.modifiedCount,
-          jobId
+          generationId,
+          progress
         });
       } catch (error) {
         console.error('❌ Progress update failed:', {
           error: error.message,
           stack: error.stack,
-          jobId,
+          generationId,
           stage,
           progress
         });
@@ -381,7 +433,7 @@ router.post('/try-on', upload.fields([
     updateProgress('Finalizing', 90);
     console.log('💾 Updating job status...');
 
-    // Update job status in MongoDB
+    // Update job status in MySQL - Mark as completed
     const completeData = {
       imageUrl: `/generated/${path.basename(generationResult.imagePath)}`,
       imagePath: generationResult.imagePath,
@@ -395,6 +447,7 @@ router.post('/try-on', upload.fields([
     };
 
     console.log('📋 Completion data to save:', {
+      generationId,
       jobId,
       imageUrl: completeData.imageUrl,
       imagePath: completeData.imagePath,
@@ -404,19 +457,30 @@ router.post('/try-on', upload.fields([
     });
 
     try {
-      await generation.complete(completeData);
+      await pool.execute(
+        `UPDATE generations
+         SET status = 'completed', imageUrl = ?, imagePath = ?, prompt = ?, metadata = ?, processingTime = ?, endTime = NOW(), updatedAt = NOW()
+         WHERE id = ?`,
+        [
+          completeData.imageUrl,
+          completeData.imagePath,
+          completeData.prompt,
+          JSON.stringify(completeData.metadata),
+          generationResult.processingTime || 0,
+          generationId
+        ]
+      );
       console.log('✅ Job completion saved successfully:', {
+        generationId,
         jobId,
-        status: generation.status,
-        imageUrl: generation.imageUrl,
-        completedAt: generation.updatedAt
+        status: 'completed'
       });
     } catch (completeError) {
       console.error('💥 Job completion failed:', {
         error: completeError.message,
         stack: completeError.stack,
-        jobId,
-        status: generation.status
+        generationId,
+        jobId
       });
       throw completeError;
     }
@@ -440,7 +504,7 @@ router.post('/try-on', upload.fields([
           analysis: processedFiles[key].analysis
         }))
       },
-      processingTime: generation.processingTime
+      processingTime: generationResult.processingTime || 0
     };
 
     console.log('📤 Sending response:', {
@@ -489,7 +553,7 @@ router.post('/try-on', upload.fields([
       timestamp: new Date().toISOString()
     });
 
-    // Update job status in MongoDB
+    // Update job status in MySQL
     try {
       if (generation) {
         console.log('💾 Marking job as failed...');
@@ -507,6 +571,19 @@ router.post('/try-on', upload.fields([
             error: generation.error,
             failedAt: generation.updatedAt
           });
+
+          // Refund token on error
+          if (generation && generation.id) {
+            await pool.execute(
+              'UPDATE users SET tokens = tokens + 1 WHERE id = ?',
+              [req.user.id]
+            );
+
+            await pool.execute(
+              'INSERT INTO token_transactions (userId, type, amount, description, generationId, createdAt) VALUES (?, ?, ?, ?, ?, NOW())',
+              [req.user.id, 'refunded', 1, `Generation failed: ${error.message}`, generation.id]
+            );
+          }
         } catch (failError) {
           console.error('💥 Job fail operation failed:', {
             error: failError.message,
@@ -669,15 +746,25 @@ router.get('/status/:jobId', async (req, res) => {
  * GET /api/generation/history
  * Get generation history
  */
-router.get('/history', async (req, res) => {
+router.get('/history', checkAuth, async (req, res) => {
   try {
-    const { modelId, limit = 20, page = 1 } = req.query;
+    const { modelId, userId, limit = 20, page = 1 } = req.query;
     const pool = require('../config/database').getPool();
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    // Build WHERE clause
+    // Build WHERE clause based on user role
     let whereClause = 'WHERE 1=1';
     const params = [];
+
+    // Non-admin users can only see their own generations
+    if (req.user.role !== 'admin') {
+      whereClause += ' AND userId = ?';
+      params.push(req.user.id);
+    } else if (userId) {
+      // Admin can optionally filter by userId
+      whereClause += ' AND userId = ?';
+      params.push(userId);
+    }
 
     if (modelId) {
       whereClause += ' AND modelId = ?';
@@ -692,7 +779,7 @@ router.get('/history', async (req, res) => {
     // Get generations with pagination
     const selectQuery = `
       SELECT
-        id, jobId, modelId, pose, provider, status, progress,
+        id, jobId, userId, modelId, pose, provider, status, progress,
         imageUrl, imagePath, prompt, error, processingTime,
         createdAt, updatedAt, endTime
       FROM generations

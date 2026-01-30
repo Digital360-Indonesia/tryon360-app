@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, History, Lock, Save, Eye, EyeOff, CreditCard, ArrowRight } from 'lucide-react';
+import { User, History, Lock, Save, Eye, EyeOff, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SharedHeader } from '../components/shared/SharedHeader';
 import api from '../services/api';
@@ -13,6 +13,8 @@ const Profile = () => {
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const [name, setName] = useState(user.name || '');
   const [phoneNumber, setPhoneNumber] = useState(user.phoneNumber || '');
+  const [tokens, setTokens] = useState(user.tokens || 0);
+  const [role, setRole] = useState(user.role || 'user');
 
   // Password states
   const [newPassword, setNewPassword] = useState('');
@@ -38,7 +40,7 @@ const Profile = () => {
     },
     {
       id: 'history',
-      label: 'Purchase History',
+      label: 'Token History',
       icon: History,
     },
   ];
@@ -50,6 +52,38 @@ const Profile = () => {
     }
   }, [activeTab]);
 
+  // Load current user data on mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      if (!token) {
+        navigate('/signup');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:9901/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (data.success && data.user) {
+          setTokens(data.user.tokens);
+          setRole(data.user.role);
+          setName(data.user.name || name);
+          setPhoneNumber(data.user.phoneNumber || phoneNumber);
+
+          // Update localStorage
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+      } catch (error) {
+        console.error('Failed to load user data:', error);
+      }
+    };
+
+    loadUserData();
+  }, [navigate]);
+
   const loadPurchaseHistory = async () => {
     setHistoryLoading(true);
     try {
@@ -59,19 +93,18 @@ const Profile = () => {
         return;
       }
 
-      // TODO: Replace with actual API call
-      // const response = await api.get('/auth/purchases', {
-      //   headers: { Authorization: `Bearer ${token}` }
-      // });
-      // setHistoryData(response.data.purchases);
+      // Load user's token transactions from API
+      const response = await api.get('/auth/token-history', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-      // Mock data for now
-      setHistoryData([
-        // Empty initially
-      ]);
+      if (response.data.success) {
+        setHistoryData(response.data.transactions);
+      }
     } catch (error) {
-      console.error('Failed to load purchase history:', error);
-      setMessage({ type: 'error', text: 'Failed to load purchase history' });
+      console.error('Failed to load token history:', error);
+      setMessage({ type: 'error', text: 'Failed to load token history' });
+      setHistoryData([]);
     } finally {
       setHistoryLoading(false);
     }
@@ -293,51 +326,68 @@ const Profile = () => {
   const renderHistoryTab = () => (
     <div className="profile-content">
       <section className="profile-section">
+        {/* Token Balance Card */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 mb-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-sm font-medium">💰 Current Balance</p>
+              <p className="text-4xl font-bold mt-1">{tokens}</p>
+              <p className="text-blue-100 text-sm mt-2">tokens available</p>
+            </div>
+            <button
+              onClick={() => navigate('/pricing')}
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+            >
+              <CreditCard className="w-4 h-4 inline mr-2" />
+              Top Up
+            </button>
+          </div>
+        </div>
+
         <div className="history-header">
-          <h2 className="section-title">Purchase History</h2>
-          <button
-            onClick={() => navigate('/pricing')}
-            className="topup-button"
-          >
-            <CreditCard className="w-4 h-4" />
-            Top Up
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <h2 className="section-title">Token History</h2>
         </div>
 
         {historyLoading ? (
           <div className="loading-state">
             <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <p>Loading purchase history...</p>
+            <p>Loading token history...</p>
           </div>
         ) : historyData.length === 0 ? (
           <div className="empty-state">
             <History className="w-16 h-16 text-gray-300" />
-            <p className="empty-state-text">No purchase history yet</p>
+            <p className="empty-state-text">No token history yet</p>
             <button
               onClick={() => navigate('/pricing')}
               className="start-generating-btn"
             >
-              Top Up Credits
+              Top Up Tokens
             </button>
           </div>
         ) : (
           <div className="history-list">
             {historyData.map((item) => (
               <div key={item.id} className="history-item">
-                <div className="history-item-image">
-                  <img src={item.image} alt={item.item} onError={(e) => {
-                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3C/svg%3E';
-                  }} />
-                </div>
                 <div className="history-item-details">
-                  <h3 className="history-item-name">{item.item}</h3>
-                  <p className="history-item-date">{item.date}</p>
+                  <h3 className="history-item-name">
+                    {item.description || (item.type === 'added' ? 'Tokens Added' : item.type === 'used' ? 'Generation' : 'Refund')}
+                  </h3>
+                  <p className="history-item-date">
+                    {new Date(item.createdAt).toLocaleString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
                 </div>
                 <div className="history-item-right">
-                  <p className="history-item-amount">{item.amount}</p>
-                  <span className={`history-status ${item.status}`}>
-                    {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                  <p className={`history-item-amount ${item.type === 'added' ? 'text-green-600' : item.type === 'used' ? 'text-red-600' : 'text-blue-600'}`}>
+                    {item.type === 'added' ? '+' : item.type === 'used' ? '-' : ''}{item.amount} tokens
+                  </p>
+                  <span className={`history-badge ${item.type}`}>
+                    {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
                   </span>
                 </div>
               </div>

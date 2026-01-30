@@ -70,6 +70,7 @@ app.get('/api/health', healthHandler);
 app.use('/api/models', require('./src/routes/models'));
 app.use('/api/generation', require('./src/routes/generation'));
 app.use('/api/auth', require('./src/routes/auth'));
+app.use('/api/admin/users', require('./src/routes/admin/users'));
 
 // Error handling middleware
 app.use((error, req, res, next) => {

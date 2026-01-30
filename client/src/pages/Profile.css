@@ -406,6 +406,30 @@
   color: #991b1b;
 }
 
+.history-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.history-badge.added {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.history-badge.used {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.history-badge.refunded {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .profile-content-grid {

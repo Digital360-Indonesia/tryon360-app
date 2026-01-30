@@ -44,6 +44,14 @@ export function SharedHeader({ activeTab, setActiveTab, tabs = [], showProfileDr
       description: 'Manage your account',
       onClick: () => navigate('/profile'),
     },
+    // Show Users & Token menu only for admin
+    ...(user.role === 'admin' ? [
+      {
+        label: 'Users & Token',
+        description: 'Manage users and tokens',
+        onClick: () => navigate('/admin/users-management'),
+      },
+    ] : []),
     {
       label: 'TryOn360',
       description: 'Go to generate tab',

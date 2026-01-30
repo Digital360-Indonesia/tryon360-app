@@ -8,7 +8,7 @@ const database = require('../config/database');
 
 const users = [
   {
-    phoneNumber: '085706679500',
+    phoneNumber: '085156858298',
     name: 'Admin',
     password: 'Ber217antok'
   }

@@ -7,6 +7,7 @@ import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 import TryOnStudio from './pages/TryOnStudio';
 import GenerationLogs from './pages/GenerationLogs';
+import UsersManagement from './pages/admin/UsersManagement';
 import './index.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/admin/users-management" element={<UsersManagement />} />
             <Route path="/app" element={<TryOnStudio />} />
             <Route path="/studio" element={<TryOnStudio />} />
             <Route path="/logs" element={<GenerationLogs />} />

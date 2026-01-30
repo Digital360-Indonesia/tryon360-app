@@ -67,12 +67,15 @@ class Database {
           metadata JSON,
           error TEXT,
           processingTime INT,
+          userId INT,
           createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           endTime TIMESTAMP NULL,
           INDEX idx_jobId (jobId),
           INDEX idx_status (status),
-          INDEX idx_createdAt (createdAt)
+          INDEX idx_createdAt (createdAt),
+          INDEX idx_userId (userId),
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `;
 
@@ -86,6 +89,8 @@ class Database {
           phoneNumber VARCHAR(20) UNIQUE NOT NULL,
           name VARCHAR(255) DEFAULT '',
           password VARCHAR(255) NOT NULL,
+          role ENUM('admin', 'user') DEFAULT 'user',
+          tokens INT DEFAULT 3,
           createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           INDEX idx_phoneNumber (phoneNumber)
@@ -94,6 +99,27 @@ class Database {
 
       await this.pool.query(createUsersTable);
       console.log('✅ Users table created successfully');
+
+      // Create token_transactions table
+      const createTokenTransactionsTable = `
+        CREATE TABLE IF NOT EXISTS token_transactions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          userId INT NOT NULL,
+          type ENUM('added', 'used', 'refunded') NOT NULL,
+          amount INT NOT NULL,
+          description TEXT,
+          generationId INT NULL,
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_userId (userId),
+          INDEX idx_type (type),
+          INDEX idx_createdAt (createdAt),
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (generationId) REFERENCES generations(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `;
+
+      await this.pool.query(createTokenTransactionsTable);
+      console.log('✅ Token transactions table created successfully');
 
       return true;
     } catch (error) {

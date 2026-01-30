@@ -41,7 +41,17 @@ export function GenerateTab({ onGenerateReady }) {
   const handleGenerate = useCallback(async () => {
     if (!canGenerate || isGenerating) return;
 
+    // Check token balance before generation
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : {};
+
+    if (!user.tokens || user.tokens <= 0) {
+      alert('❌ Token habis! Silakan hubungi admin untuk menambah token.');
+      return;
+    }
+
     console.log('🎯 Generate button clicked!');
+    console.log('💰 Current tokens:', user.tokens);
     startGeneration();
 
     try {
@@ -86,6 +96,16 @@ export function GenerateTab({ onGenerateReady }) {
 
       if (response.success && response.result) {
         console.log('✅ Generation successful!');
+
+        // Update user token count in localStorage
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          user.tokens = (user.tokens || 0) - 1;
+          localStorage.setItem('user', JSON.stringify(user));
+          console.log('💰 Token updated:', user.tokens);
+        }
+
         // Complete generation
         completeGeneration(response.result);
 

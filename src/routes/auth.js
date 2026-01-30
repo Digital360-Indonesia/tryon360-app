@@ -76,7 +76,7 @@ router.post('/login', async (req, res) => {
 
     // Find user
     const [users] = await pool.execute(
-      'SELECT id, phoneNumber, name, password, createdAt FROM users WHERE phoneNumber = ?',
+      'SELECT id, phoneNumber, name, password, role, tokens, createdAt FROM users WHERE phoneNumber = ?',
       [phoneNumber]
     );
 
@@ -101,7 +101,7 @@ router.post('/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id, phoneNumber: user.phoneNumber },
+      { userId: user.id, phoneNumber: user.phoneNumber, role: user.role },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
@@ -144,7 +144,7 @@ router.get('/me', async (req, res) => {
     const pool = getPool();
 
     const [users] = await pool.execute(
-      'SELECT id, phoneNumber, name, createdAt FROM users WHERE id = ?',
+      'SELECT id, phoneNumber, name, role, tokens, createdAt FROM users WHERE id = ?',
       [decoded.userId]
     );
 
@@ -242,7 +242,7 @@ router.put('/profile', async (req, res) => {
 
     // Get updated user
     const [users] = await pool.execute(
-      'SELECT id, phoneNumber, name, createdAt FROM users WHERE id = ?',
+      'SELECT id, phoneNumber, name, role, tokens, createdAt FROM users WHERE id = ?',
       [decoded.userId]
     );
 
@@ -371,13 +371,13 @@ router.post('/create-user', async (req, res) => {
 
     // Create user
     const [result] = await pool.execute(
-      'INSERT INTO users (phoneNumber, name, password, createdAt, updatedAt) VALUES (?, ?, ?, NOW(), NOW())',
-      [phoneNumber, name || '', hashedPassword]
+      'INSERT INTO users (phoneNumber, name, password, role, tokens, createdAt, updatedAt) VALUES (?, ?, ?, ?, 3, NOW(), NOW())',
+      [phoneNumber, name || '', hashedPassword, 'user']
     );
 
     // Get created user
     const [users] = await pool.execute(
-      'SELECT id, phoneNumber, name, createdAt FROM users WHERE id = ?',
+      'SELECT id, phoneNumber, name, role, tokens, createdAt FROM users WHERE id = ?',
       [result.insertId]
     );
 
@@ -390,6 +390,62 @@ router.post('/create-user', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to create user'
+    });
+  }
+});
+
+/**
+ * GET /api/auth/token-history
+ * Get current user's token transaction history
+ */
+router.get('/token-history', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided'
+      });
+    }
+
+    // Verify token and get user ID
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.userId;
+
+    const pool = getPool();
+
+    // Get user's token transactions
+    const [transactions] = await pool.execute(
+      `SELECT
+        id,
+        type,
+        amount,
+        description,
+        generationId,
+        createdAt
+      FROM token_transactions
+      WHERE userId = ?
+      ORDER BY createdAt DESC
+      LIMIT 100`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      transactions: transactions
+    });
+  } catch (error) {
+    console.error('Token history error:', error);
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token'
+      });
+    }
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch token history'
     });
   }
 });

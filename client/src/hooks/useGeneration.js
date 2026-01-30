@@ -2,6 +2,26 @@ import { useCallback } from 'react';
 import { apiMethods, createGenerationFormData } from '../services/api';
 import storageService from '../services/storage';
 import API_CONFIG from '../config/api';
+import toastr from 'toastr';
+
+// Configure toastr
+toastr.options = {
+  closeButton: true,
+  debug: false,
+  newestOnTop: false,
+  progressBar: true,
+  positionClass: 'toast-top-right',
+  preventDuplicates: false,
+  onclick: null,
+  showDuration: '300',
+  hideDuration: '1000',
+  timeOut: '5000',
+  extendedTimeOut: '1000',
+  showEasing: 'swing',
+  hideEasing: 'linear',
+  showMethod: 'fadeIn',
+  hideMethod: 'fadeOut',
+};
 
 // ============================================
 // USE GENERATION HOOK
@@ -49,10 +69,36 @@ export function useGeneration() {
     } catch (error) {
       console.error('💥 useGeneration error:', error);
       console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
+      console.error('Error response:', error.response?.data);
+
+      // Handle 403 Forbidden - Token habis
+      if (error.response?.status === 403) {
+        const errorMessage = error.response?.data?.error || error.message;
+        const message = errorMessage.includes('Token habis') ? errorMessage : 'Token habis. Silakan hubungi admin untuk menambah token.';
+
+        // Show toastr notification
+        toastr.error(message, 'Token Habis', {
+          timeOut: 6000,
+          extendedTimeOut: 2000,
+        });
+
+        return {
+          success: false,
+          error: message,
+          result: null,
+          isTokenError: true,
+        };
+      }
+
+      // Handle other errors
+      const errorMessage = error.message || 'Failed to generate try-on image';
+      toastr.error(errorMessage, 'Error', {
+        timeOut: 5000,
+      });
+
       return {
         success: false,
-        error: error.message || 'Failed to generate try-on image',
+        error: errorMessage,
         result: null,
       };
     }
