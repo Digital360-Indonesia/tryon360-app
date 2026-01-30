@@ -50,7 +50,7 @@ const Signup = () => {
     try {
       // Check if phone number exists
       const response = await api.post('/auth/check-phone', {
-        phoneNumber: '+62' + phoneNumber
+        phoneNumber: phoneNumber
       });
 
       if (response.data.exists) {
@@ -94,7 +94,7 @@ const Signup = () => {
 
     try {
       const response = await api.post('/auth/login', {
-        phoneNumber: '+62' + phoneNumber,
+        phoneNumber: phoneNumber,
         password
       });
 
@@ -148,19 +148,16 @@ const Signup = () => {
             <label htmlFor="phone" className="form-label">
               Phone Number
             </label>
-            <div className="phone-input-wrapper">
-              <span className="country-code">+62</span>
-              <input
-                id="phone"
-                type="tel"
-                value={phoneNumber}
-                onChange={handlePhoneChange}
-                placeholder="81234567890"
-                className="form-input"
-                disabled={isLoading}
-                autoComplete="tel"
-              />
-            </div>
+            <input
+              id="phone"
+              type="tel"
+              value={phoneNumber}
+              onChange={handlePhoneChange}
+              placeholder="6281234567890"
+              className="form-input"
+              disabled={isLoading}
+              autoComplete="tel"
+            />
           </div>
 
           {/* Password Input - only show if user exists */}

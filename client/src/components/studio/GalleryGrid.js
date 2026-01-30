@@ -46,10 +46,10 @@ export function GalleryGrid({
     );
   }
 
-  // Masonry-style grid with 30px gap on all sides, 6 columns
+  // CSS Grid with even distribution - 6 columns max
   return (
     <div className="p-[30px]">
-      <div className="columns-1 sm:columns-2 lg:columns-4 xl:columns-6 gap-[30px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-[30px]">
         {generations.map((gen) => (
           <GalleryItem
             key={gen.id}

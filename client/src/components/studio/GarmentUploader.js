@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Upload, Image as ImageIcon, X, Check } from 'lucide-react';
 
 // ============================================
@@ -20,6 +20,11 @@ const GarmentUploader = ({ onUpload, preview: propPreview, isRequired = true }) 
   const [isDragging, setIsDragging] = useState(false);
   const [preview, setPreview] = useState(propPreview || null);
   const [file, setFile] = useState(null);
+
+  // Sync preview state with prop
+  useEffect(() => {
+    setPreview(propPreview || null);
+  }, [propPreview]);
 
   const handleFileSelect = (selectedFile) => {
     if (!selectedFile) return;
@@ -145,14 +150,16 @@ const GarmentUploader = ({ onUpload, preview: propPreview, isRequired = true }) 
             </div>
 
             {/* File Info */}
-            <div>
-              <p className="font-medium text-gray-900 truncate" title={file.name}>
-                {truncateFilename(file.name)}
-              </p>
-              <p className="text-sm text-gray-600">
-                {(file.size / 1024 / 1024).toFixed(2)} MB
-              </p>
-            </div>
+            {file && (
+              <div>
+                <p className="font-medium text-gray-900 truncate" title={file.name}>
+                  {truncateFilename(file.name)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              </div>
+            )}
 
             {/* Change Link */}
             <p className="text-sm text-blue-600 font-medium hover:text-blue-700">

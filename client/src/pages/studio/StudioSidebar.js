@@ -17,7 +17,7 @@ const TABS = [
   { id: 'upload', label: 'Upload', icon: UploadIcon },
 ];
 
-export function StudioSidebar({ children }) {
+export function StudioSidebar({ children, onGenerate }) {
   const {
     sidebarSection,
     setSidebarSection,
@@ -49,9 +49,7 @@ export function StudioSidebar({ children }) {
   };
 
   const handleGarmentUpload = (file) => {
-    console.log('handleGarmentUpload called with:', file);
     setUpload('product', file);
-    console.log('After setUpload, uploads:', uploads);
   };
 
   // Track detail slots separately from uploads
@@ -76,7 +74,17 @@ export function StudioSidebar({ children }) {
   };
 
   const handleGenerateClick = () => {
-    console.log('Generate clicked');
+    console.log('Generate clicked from sidebar');
+    console.log('🔍 onGenerate:', onGenerate);
+    console.log('🔍 onGenerate type:', typeof onGenerate);
+    if (canGenerate && !isGenerating) {
+      // Call the parent's onGenerate which will execute handleGenerate from GenerateTab
+      console.log('✅ Calling onGenerate()...');
+      onGenerate?.();
+      console.log('✅ onGenerate() called');
+    } else {
+      console.log('Cannot generate:', { canGenerate, isGenerating });
+    }
   };
 
   const renderTabContent = () => {

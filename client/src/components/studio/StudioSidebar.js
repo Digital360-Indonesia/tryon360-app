@@ -48,8 +48,12 @@ const StudioSidebar = ({ onGenerate }) => {
   };
 
   const handleGenerateClick = () => {
+    console.log('Generate clicked from sidebar');
     if (canGenerate && !isGenerating) {
+      // Call the parent's onGenerate which will execute handleGenerate from GenerateTab
       onGenerate?.();
+    } else {
+      console.log('Cannot generate:', { canGenerate, isGenerating });
     }
   };
 

@@ -25,10 +25,25 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
-        return response;
+    console.log('✅ Axios response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      hasData: !!response.data,
+      dataType: typeof response.data,
+      dataKeys: response.data ? Object.keys(response.data) : [],
+      data: response.data
+    });
+    return response;
   },
   (error) => {
-        
+    console.error('❌ Axios error:', {
+      message: error.message,
+      code: error.code,
+      hasResponse: !!error.response,
+      responseStatus: error.response?.status,
+      responseData: error.response?.data
+    });
+
     // Handle common errors
     if (error.response?.status === 413) {
       error.message = 'File too large. Please use a smaller image.';
@@ -37,7 +52,7 @@ api.interceptors.response.use(
     } else if (error.code === 'ECONNABORTED') {
       error.message = 'Request timeout. The generation is taking longer than expected.';
     }
-    
+
     return Promise.reject(error);
   }
 );

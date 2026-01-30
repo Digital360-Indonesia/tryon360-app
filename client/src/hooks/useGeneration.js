@@ -13,15 +13,27 @@ export function useGeneration() {
 
   // Generate try-on image
   const generateTryOn = useCallback(async (generationData, uploadFiles) => {
+    console.log('🔧 useGeneration: generateTryOn called');
     try {
       // Create FormData with existing helper
       const formData = createGenerationFormData(generationData, uploadFiles);
+      console.log('📦 FormData created');
 
       // Call existing API endpoint
+      console.log('📤 Calling apiMethods.generateTryOn...');
       const response = await apiMethods.generateTryOn(formData);
+      console.log('📥 API Response:', {
+        hasSuccess: 'success' in response,
+        success: response?.success,
+        hasResult: 'result' in response,
+        hasJobId: 'jobId' in response,
+        hasError: 'error' in response,
+        keys: Object.keys(response),
+        response: response
+      });
 
       // Return the response
-      return {
+      const result = {
         success: response.success,
         jobId: response.jobId,
         result: response.success ? {
@@ -32,8 +44,12 @@ export function useGeneration() {
         error: response.error || null,
         processingTime: response.processingTime,
       };
+      console.log('✅ Returning from useGeneration:', result);
+      return result;
     } catch (error) {
-      console.error('Generation error:', error);
+      console.error('💥 useGeneration error:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
       return {
         success: false,
         error: error.message || 'Failed to generate try-on image',

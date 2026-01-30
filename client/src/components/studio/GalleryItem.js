@@ -46,9 +46,10 @@ export function GalleryItem({
     setIsLiked(!isLiked);
   };
 
-  // Handle view
+  // Handle view - trigger parent onClick (opens lightbox)
   const handleView = (e) => {
     e.stopPropagation();
+    // Just call parent onClick - it will open lightbox
     onClick?.();
   };
 

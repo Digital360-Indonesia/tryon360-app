@@ -122,15 +122,24 @@ function studioReducer(state, action) {
       return { ...state, showPoseModal: action.payload };
 
     // Upload Actions
-    case ACTION_TYPES.SET_UPLOAD:
+    case ACTION_TYPES.SET_UPLOAD: {
+      const newUploads = { ...state.uploads, [action.payload.slot]: action.payload.file };
+      console.log('📤 SET_UPLOAD:', {
+        slot: action.payload.slot,
+        hasFile: !!action.payload.file,
+        fileName: action.payload.file?.name,
+        newUploads
+      });
       return {
         ...state,
-        uploads: { ...state.uploads, [action.payload.slot]: action.payload.file }
+        uploads: newUploads
       };
-    case ACTION_TYPES.REMOVE_UPLOAD:
+    }
+    case ACTION_TYPES.REMOVE_UPLOAD: {
       const newUploads = { ...state.uploads };
       delete newUploads[action.payload];
       return { ...state, uploads: newUploads };
+    }
     case ACTION_TYPES.CLEAR_UPLOADS:
       return { ...state, uploads: initialState.uploads };
 
@@ -218,7 +227,12 @@ function studioReducer(state, action) {
     console.log('✨ New state:', {
       selectedModel: newState.selectedModel,
       selectedPose: newState.selectedPose,
-      uploads: newState.uploads
+      uploads: {
+        product: newState.uploads.product?.name || null,
+        detail1: newState.uploads.detail1?.name || null,
+        detail2: newState.uploads.detail2?.name || null,
+        detail3: newState.uploads.detail3?.name || null,
+      }
     });
   }
 
@@ -361,6 +375,17 @@ export function StudioProvider({ children }) {
       ? state.galleryItems
       : state.galleryItems.filter(item => item.modelId === state.galleryFilter),
   };
+
+  // Debug canGenerate
+  console.log('🔍 canGenerate check:', {
+    canGenerate: computed.canGenerate,
+    hasModel: !!state.selectedModel,
+    hasPose: !!state.selectedPose,
+    hasProduct: !!state.uploads.product,
+    hasProvider: !!state.providerId,
+    notGenerating: !state.isGenerating,
+    productName: state.uploads.product?.name || 'null'
+  });
 
   const value = {
     // State

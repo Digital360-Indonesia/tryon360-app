@@ -15,7 +15,7 @@ function TryOnStudioContent() {
   const studio = useStudio();
 
   const {
-    setGenerationResults,
+    setGalleryItems,
     activeTab,
     setActiveTab,
     galleryItems,
@@ -24,29 +24,49 @@ function TryOnStudioContent() {
   // Check for auth token on mount
   const [isChecking, setIsChecking] = useState(true);
 
+  // Store generate handler from GenerateTab to pass to StudioSidebar
+  // Use useRef to avoid re-renders when function changes
+  const generateHandlerRef = React.useRef(null);
+
+  // Store the handler when ready
+  const setGenerateHandler = React.useCallback((handler) => {
+    console.log('🔄 Setting generateHandler:', {
+      exists: !!handler,
+      type: typeof handler
+    });
+    generateHandlerRef.current = handler;
+    console.log('✅ generateHandler stored in ref');
+  }, []);
+
   useEffect(() => {
+    console.log('🔍 TryOnStudio: Checking auth...');
     const token = localStorage.getItem('authToken');
-    const user = JSON.parse(localStorage.getItem('user')) || {};
+    const userStr = localStorage.getItem('user');
+    console.log('📦 Token:', token ? 'exists' : 'missing');
+    console.log('👤 User:', userStr);
+
+    const user = userStr ? JSON.parse(userStr) : {};
 
     if (!token) {
+      console.log('❌ No token, redirecting to signup');
       navigate('/signup');
       return;
     }
 
     // Check if profile is complete (name is required)
     if (!user.name) {
+      console.log('❌ No name in user, redirecting to profile');
       navigate('/profile');
       return;
     }
 
+    console.log('✅ Auth check passed, user:', user.name);
     setIsChecking(false);
 
-    // Load saved history on mount
-    const savedHistory = storageService.getGenerationHistory();
-    if (savedHistory.length > 0) {
-      setGenerationResults(savedHistory);
-    }
-  }, [navigate, setGenerationResults]);
+    // NOTE: Gallery items now loaded from database via GalleryTab
+    // No need to load from localStorage anymore
+    console.log('ℹ️ Gallery items will be loaded from database via GalleryTab');
+  }, [navigate]);
 
   // Tabs config
   const tabs = [
@@ -83,11 +103,23 @@ function TryOnStudioContent() {
 
       {/* Main Layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar - only show on Generate tab */}
-        {activeTab === 'generate' && <StudioSidebar />}
+        {/* Sidebar - always show on Generate tab, uses ref to avoid re-renders */}
+        {activeTab === 'generate' && (
+          <StudioSidebar
+            onGenerate={() => {
+              const handler = generateHandlerRef.current;
+              if (handler) {
+                console.log('✅ Calling generateHandler from ref');
+                handler();
+              } else {
+                console.log('⚠️ Generate handler not ready in ref yet');
+              }
+            }}
+          />
+        )}
 
         {/* Canvas - shows GenerateTab or GalleryTab */}
-        <StudioCanvas />
+        <StudioCanvas onGenerateReady={setGenerateHandler} />
       </div>
     </div>
   );
