@@ -258,7 +258,6 @@ Edit `.env` file:
 ```env
 # API Keys (Dapatkan dari provider masing-masing)
 GEMINI_API_KEY=your_gemini_api_key_here
-FLUX_API_KEY=your_flux_api_key_here
 
 # Database Configuration
 DB_HOST=localhost
@@ -306,11 +305,6 @@ Aplikasi akan berjalan di:
 1. Kunjungi [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. Create new API key
 3. Copy dan paste ke `.env` sebagai `GEMINI_API_KEY`
-
-#### Flux API Key (Black Forest Labs)
-1. Kunjungi [BFL API](https://api.bfl.ml/)
-2. Sign up dan dapatkan API key
-3. Copy dan paste ke `.env` sebagai `FLUX_API_KEY`
 
 ### Database Configuration
 
@@ -709,7 +703,6 @@ DB_PASSWORD=strong_production_password
 
 # API Keys
 GEMINI_API_KEY=production_gemini_key
-FLUX_API_KEY=production_flux_key
 ```
 
 ---

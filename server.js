@@ -151,7 +151,7 @@ app.listen(PORT, async () => {
   }
 
   // Validate API keys
-  const requiredKeys = ['GEMINI_API_KEY', 'FLUX_API_KEY'];
+  const requiredKeys = ['GEMINI_API_KEY'];
   const missingKeys = requiredKeys.filter(key => !process.env[key]);
 
   if (missingKeys.length > 0) {

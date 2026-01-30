@@ -13,7 +13,6 @@ class AIService {
     
     // Initialize API keys from environment
     this.apiKeys = {
-      flux_kontext: process.env.FLUX_API_KEY,
       gemini_flash: process.env.GEMINI_API_KEY,
       nano_banana: process.env.GEMINI_API_KEY, // Uses same Gemini API key
       gemini_2_5_flash_image: process.env.GEMINI_API_KEY, // Uses same Gemini API key
