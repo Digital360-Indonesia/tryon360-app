@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, RefreshCw, Search, Plus, ChevronLeft, ChevronRight, Eye, Wallet } from 'lucide-react';
 import { SharedHeader } from '../../components/shared/SharedHeader';
 import Select from 'react-select';
+import API_CONFIG from '../../config/api';
 import '../Profile.css';
 
 export default function UsersManagement() {
@@ -79,7 +80,7 @@ function UsersTab({ token }) {
     try {
       const searchParam = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : '';
       const response = await fetch(
-        `http://localhost:9901/api/admin/users?page=${page}&limit=${pagination.limit}${searchParam}`,
+        `${API_CONFIG.getApiUrl()}/admin/users?page=${page}&limit=${pagination.limit}${searchParam}`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
@@ -121,7 +122,7 @@ function UsersTab({ token }) {
     if (!confirm(`Tambah ${numAmount} token untuk ${userName}?`)) return;
 
     try {
-      const response = await fetch(`http://localhost:9901/api/admin/users/${userId}/tokens`, {
+      const response = await fetch(`${API_CONFIG.getApiUrl()}/admin/users/${userId}/tokens`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -153,7 +154,7 @@ function UsersTab({ token }) {
     }
 
     try {
-      const response = await fetch(`http://localhost:9901/api/admin/users/${userId}`, {
+      const response = await fetch(`${API_CONFIG.getApiUrl()}/admin/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -180,7 +181,7 @@ function UsersTab({ token }) {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:9901/api/admin/users', {
+      const response = await fetch(`${API_CONFIG.getApiUrl()}/admin/users`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -507,7 +508,7 @@ function TokensTab({ token }) {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:9901/api/admin/users?limit=100', {
+      const response = await fetch(`${API_CONFIG.getApiUrl()}/admin/users?limit=100`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -524,7 +525,7 @@ function TokensTab({ token }) {
     setError('');
     try {
       const response = await fetch(
-        `http://localhost:9901/api/admin/users/${userId}/transactions`,
+        `${API_CONFIG.getApiUrl()}/admin/users/${userId}/transactions`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }

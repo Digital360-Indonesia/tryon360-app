@@ -3,6 +3,7 @@ import { User, History, Lock, Save, Eye, EyeOff, CreditCard } from 'lucide-react
 import { useNavigate } from 'react-router-dom';
 import { SharedHeader } from '../components/shared/SharedHeader';
 import api from '../services/api';
+import API_CONFIG from '../config/api';
 import './Profile.css';
 
 const Profile = () => {
@@ -62,7 +63,7 @@ const Profile = () => {
       }
 
       try {
-        const response = await fetch('http://localhost:9901/api/auth/me', {
+        const response = await fetch(`${API_CONFIG.getApiUrl()}/auth/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Plus, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import API_CONFIG from '../../config/api';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -42,7 +43,7 @@ export default function AdminUsers() {
     try {
       const searchParam = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : '';
       const response = await fetch(
-        `http://localhost:9901/api/admin/users?page=${page}&limit=${pagination.limit}${searchParam}`,
+        `${API_CONFIG.getApiUrl()}/admin/users?page=${page}&limit=${pagination.limit}${searchParam}`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
@@ -84,7 +85,7 @@ export default function AdminUsers() {
     if (!confirm(`Tambah ${numAmount} token untuk ${userName}?`)) return;
 
     try {
-      const response = await fetch(`http://localhost:9901/api/admin/users/${userId}/tokens`, {
+      const response = await fetch(`${API_CONFIG.getApiUrl()}/admin/users/${userId}/tokens`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -116,7 +117,7 @@ export default function AdminUsers() {
     }
 
     try {
-      const response = await fetch(`http://localhost:9901/api/admin/users/${userId}`, {
+      const response = await fetch(`${API_CONFIG.getApiUrl()}/admin/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -142,7 +143,7 @@ export default function AdminUsers() {
   const viewTransactions = async (userId, userName) => {
     try {
       const response = await fetch(
-        `http://localhost:9901/api/admin/users/${userId}/transactions`,
+        `${API_CONFIG.getApiUrl()}/admin/users/${userId}/transactions`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
