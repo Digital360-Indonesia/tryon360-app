@@ -281,8 +281,9 @@ router.post('/try-on', upload.fields([
           bufferLength: req.files[detailKey][0].buffer.length
         });
 
+        let detailResult;
         try {
-          const detailResult = await imageProcessor.processUpload(req.files[detailKey][0], detailKey);
+          detailResult = await imageProcessor.processUpload(req.files[detailKey][0], detailKey);
           processedFiles[detailKey] = detailResult;
           uploadedImages.push(detailResult.path);
           console.log(`✅ Detail ${i + 1} processed:`, {
@@ -305,7 +306,7 @@ router.post('/try-on', upload.fields([
         const positionKey = `embroideryPosition${i + 1}`;
         const descriptionKey = `embroideryDescription${i + 1}`;
 
-        if (req.body[positionKey] && req.body[descriptionKey]) {
+        if (req.body[positionKey] && req.body[descriptionKey] && detailResult) {
           embroideryDetails.push({
             position: req.body[positionKey],
             description: req.body[descriptionKey],
