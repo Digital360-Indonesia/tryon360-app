@@ -4,9 +4,9 @@
   "description": "Professional Try-On App - Full Stack Monolithic",
   "main": "server.js",
   "scripts": {
-    "setup:dev": "npm install && cd client && npm install && npm run build && cp -r build ../ && cd .. && node src/seeders/initDatabase.js",
-    "setup:prod": "npm ci && cd client && npm install && npm run build && cp -r build ../ && cd .. && node src/seeders/initDatabase.js",
-    "build": "cd client && npm install && npm run build && cp -r build ../",
+    "setup:dev": "npm install && cd client && npm install && REACT_APP_API_URL=http://localhost:9901 npm run build && cp -r build ../ && cd .. && node src/seeders/initDatabase.js",
+    "setup:prod": "npm ci && cd client && npm install && REACT_APP_API_URL=https://tryon.digital360.id npm run build && cp -r build ../ && cd .. && node src/seeders/initDatabase.js",
+    "build": "cd client && npm install && REACT_APP_API_URL=https://tryon.digital360.id npm run build && cp -r build ../",
     "start": "NODE_ENV=production node server.js",
     "dev": "nodemon server.js",
     "db:init": "node src/seeders/initDatabase.js",
