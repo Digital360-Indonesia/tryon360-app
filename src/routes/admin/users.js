@@ -41,8 +41,7 @@ router.get('/', checkAuth, requireAdmin, async (req, res) => {
     const total = countRows[0].total;
 
     // Get users
-    query += ' ORDER BY createdAt DESC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
+    query += ` ORDER BY createdAt DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
 
     const [users] = await pool.execute(query, params);
 
@@ -383,8 +382,8 @@ router.get('/:id/transactions', checkAuth, requireAdmin, async (req, res) => {
        FROM token_transactions
        WHERE userId = ?
        ORDER BY createdAt DESC
-       LIMIT ? OFFSET ?`,
-      [id, parseInt(limit), offset]
+       LIMIT ${parseInt(limit)} OFFSET ${offset}`,
+      [id]
     );
 
     res.json({

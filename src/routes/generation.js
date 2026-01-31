@@ -785,10 +785,10 @@ router.get('/history', checkAuth, async (req, res) => {
       FROM generations
       ${whereClause}
       ORDER BY createdAt DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
 
-    const [generations] = await pool.query(selectQuery, [...params, parseInt(limit), offset]);
+    const [generations] = await pool.query(selectQuery, params);
 
     res.json({
       success: true,
@@ -839,8 +839,7 @@ router.get('/logs', async (req, res) => {
     }
 
     // Add ordering and pagination
-    query += ' ORDER BY createdAt DESC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
+    query += ` ORDER BY createdAt DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
 
     const [rows] = await pool.execute(query, params);
 
