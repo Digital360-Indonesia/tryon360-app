@@ -1,43 +1,8 @@
 // API Configuration
 const API_CONFIG = {
-  // Determine backend URL based on environment
+  // Get backend URL from environment variable
   getBackendUrl: () => {
-    // Check if we're running on Netlify (production)
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-    const isNetlifyProduction = hostname.includes('netlify.app');
-    const isVercelProduction = hostname.includes('vercel.app');
-    const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
-
-    // If environment variable is explicitly set, use it (highest priority)
-    if (process.env.REACT_APP_API_URL) {
-      const backendUrl = process.env.REACT_APP_API_URL.replace('/api', '');
-      return backendUrl;
-    }
-
-    // Vercel deployment - use local backend or configured URL
-    if (isVercelProduction) {
-      // For Vercel, use REVERCEL_APP_API_URL if set, otherwise assume local backend
-      if (process.env.REACT_APP_API_URL) {
-        return process.env.REACT_APP_API_URL.replace('/api', '');
-      }
-      // Default: assume backend is running locally
-      return 'http://localhost:3000';
-    }
-
-    // If we're on Netlify, always use production backend
-    if (isNetlifyProduction) {
-      return 'https://tryon-app-backend.fly.dev';
-    }
-
-    // For development: use current origin (same port for single-port setup)
-    if (isDevelopment) {
-      // In single-port mode, both frontend and backend are on same port
-      const port = window.location.port || '9901';
-      return `http://localhost:${port}`;
-    }
-
-    // Default fallback (production with same host)
-    return `https://${hostname}`;
+    return process.env.REACT_APP_API_URL || window.location.origin;
   },
 
   // Get API base URL
